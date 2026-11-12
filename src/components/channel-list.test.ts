@@ -60,6 +60,8 @@ const {
       getLiveLayout: vi.fn((): 'grid' | 'list' => 'list'),
       getLiveRegion: vi.fn((): string | null => null),
       setLiveRegion: vi.fn(),
+      getLiveRegionPicked: vi.fn(() => false),
+      setLiveRegionPicked: vi.fn(),
       getLiveLocation: vi.fn((): { group: string; playlist: string } | null => null),
       setLiveLocation: vi.fn(),
       getChannelCustomization: () => customization.record,
@@ -1379,6 +1381,39 @@ describe('ChannelList card grid and countries', () => {
       .map(name => name.textContent)).toEqual(['Channel 0', 'Channel 1', 'Channel 5', 'Channel 6']);
     expect(Array.from(container.querySelectorAll('.group-item .group-name'))
       .map(name => name.textContent)).toEqual(['All', 'Favorites', 'Recently Watched', 'News', 'Sport']);
+  });
+
+  it('opens on the TV\'s country until the viewer picks one', () => {
+    localStorage.setItem('iptv_tv_country', JSON.stringify('SE'));
+    storageMock.getLiveRegion.mockReturnValue('GB');
+    try {
+      list = new ChannelList(container, { onChannelSelect: onSelect });
+      Focus.setBase(() => list.focusScope);
+      list.render();
+      expect(container.querySelector('.region-chip.active')?.getAttribute('data-region')).toBe('SE');
+      expect(storageMock.setLiveRegion).toHaveBeenCalledWith('SE');
+      // The TV's country leads the chips, after All countries.
+      expect(Array.from(container.querySelectorAll<HTMLElement>('.region-chip'))
+        .map(chip => chip.dataset.region)).toEqual(['', 'SE', 'GB', 'DE']);
+
+      storageMock.getLiveRegionPicked.mockReturnValue(true);
+      list = new ChannelList(container, { onChannelSelect: onSelect });
+      Focus.setBase(() => list.focusScope);
+      list.render();
+      expect(container.querySelector('.region-chip.active')?.getAttribute('data-region')).toBe('GB');
+    } finally {
+      localStorage.removeItem('iptv_tv_country');
+      storageMock.getLiveRegionPicked.mockReturnValue(false);
+    }
+  });
+
+  it('remembers a country the viewer picks', () => {
+    list.render();
+    list.handleAction('left');
+    list.handleAction('up');
+    list.handleAction('right');
+    list.handleAction('select');
+    expect(storageMock.setLiveRegionPicked).toHaveBeenCalledWith(true);
   });
 
   it('keeps the list while editing', () => {

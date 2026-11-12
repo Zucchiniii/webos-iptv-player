@@ -32,6 +32,7 @@ import { VirtualList } from '../utils/virtual-list';
 import { VirtualScrollGuard } from '../utils/virtual-scroll';
 import { CONFIG } from '../config';
 import { groupRegion, regionCode, regionName, regionsOf } from '../utils/channel-region';
+import { TvCountry } from '../services/tv-country';
 
 // Row strides mirror the fixed row geometry in css/channel-list.css:
 // .channel-item is 88px, .group-item is 60px plus its 8px vertical margin.
@@ -108,8 +109,8 @@ export class ChannelList {
   private renderedColumns = 0;
   // The country Live is narrowed to ('' = every country).
   private currentRegion = '';
-  // False until the viewer (or the first country-prefixed load) picks one.
-  private regionChosen = false;
+  // A country the viewer picked sticks; otherwise Live follows the TV's own.
+  private regionPicked = false;
   private regionEntries: { code: string; count: number }[] = [];
   private regionEntriesKey = '';
   private regionEntriesChannels: Channel[] | null = null;
@@ -168,9 +169,8 @@ export class ChannelList {
       this.currentGroup = saved.group as ChannelGroupId;
       this.currentPlaylist = saved.playlist;
     }
-    const region = StorageService.getLiveRegion();
-    this.currentRegion = region ?? '';
-    this.regionChosen = region !== null;
+    this.currentRegion = StorageService.getLiveRegion() ?? '';
+    this.regionPicked = StorageService.getLiveRegionPicked();
     this.onChannelSelect = onChannelSelect;
     this.onChannelsChanged = onChannelsChanged;
     this.onEnterPreview = onEnterPreview;
@@ -736,7 +736,7 @@ export class ChannelList {
           this.saveLocation();
           this.render();
         } else if (focused.dataset.region !== undefined) {
-          this.setRegion(focused.dataset.region);
+          this.setRegion(focused.dataset.region, true);
           this.render();
         } else if (focused.dataset.group !== undefined) {
           this.currentGroup = focused.dataset.group as ChannelGroupId;
@@ -877,9 +877,12 @@ export class ChannelList {
     StorageService.setLiveLocation(this.currentGroup, this.currentPlaylist);
   }
 
-  private setRegion(code: string): void {
+  private setRegion(code: string, picked: boolean): void {
     this.currentRegion = code;
-    this.regionChosen = true;
+    if (picked !== this.regionPicked) {
+      this.regionPicked = picked;
+      StorageService.setLiveRegionPicked(picked);
+    }
     StorageService.setLiveRegion(code);
     // The group in view may belong to another country; start from its All.
     if (this.currentGroup.indexOf('source:') === 0
@@ -992,7 +995,7 @@ export class ChannelList {
       position = this.channelPosition(globalIdx);
     }
     if (position < 0 && this.currentRegion) {
-      this.setRegion('');
+      this.setRegion('', this.regionPicked);
       position = this.channelPosition(globalIdx);
     }
     if (position < 0 && this.currentPlaylist) {
@@ -1519,7 +1522,8 @@ export class ChannelList {
   }
 
   private getRegionEntries(): { code: string; count: number }[] {
-    const key = `${this.currentPlaylist}|${String(PlaylistService.groupsRevision)}`;
+    const home = TvCountry.get();
+    const key = `${this.currentPlaylist}|${String(PlaylistService.groupsRevision)}|${home}`;
     if (this.regionEntriesKey === key && this.regionEntriesChannels === PlaylistService.channels) {
       return this.regionEntries;
     }
@@ -1530,12 +1534,13 @@ export class ChannelList {
       `source:${group}` as ChannelGroupId,
       this.currentPlaylist || undefined,
     ));
-    // The TV's own country leads, and a first country-prefixed list opens on it:
-    // most viewers want their own channels out of a worldwide list.
-    const home = homeRegion();
+    // The TV's own country leads, and Live opens on it until the viewer picks
+    // another: most viewers want their own channels out of a worldwide list.
     const homeIndex = regions.findIndex(region => region.code === home);
     if (homeIndex > 0) regions.unshift(regions.splice(homeIndex, 1)[0]);
-    if (!this.regionChosen && homeIndex >= 0) this.setRegion(home);
+    if (!this.regionPicked && homeIndex >= 0 && this.currentRegion !== home) {
+      this.setRegion(home, false);
+    }
     this.regionEntries = regions;
     if (this.currentRegion && !regions.some(r => r.code === this.currentRegion)) {
       this.currentRegion = '';
@@ -1663,14 +1668,6 @@ export class ChannelList {
 }
 
 const GLOBE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>';
-
-// The country the TV is set to, from its UI locale (sv-SE → SE).
-function homeRegion(): string {
-  const tag = typeof navigator !== 'undefined' ? navigator.language || '' : '';
-  const region = tag.split(/[-_]/)[1] ?? '';
-  const upper = region.toUpperCase();
-  return upper === 'UK' ? 'GB' : upper;
-}
 
 function formatClock(date: Date): string {
   return formatTime(date);

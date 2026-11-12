@@ -68,6 +68,8 @@ const { data, customization, playlistMock, epgMock, storageMock, recentMock, toa
       getLiveLayout: vi.fn((): 'grid' | 'list' => 'list'),
       getLiveRegion: vi.fn((): string | null => null),
       setLiveRegion: vi.fn(),
+      getLiveRegionPicked: vi.fn(() => false),
+      setLiveRegionPicked: vi.fn(),
       getLiveLocation: vi.fn((): { group: string; playlist: string } | null => null),
       setLiveLocation: vi.fn(),
       getChannelCustomization: () => customization.record,

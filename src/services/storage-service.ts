@@ -1127,6 +1127,14 @@ export const StorageService = {
     set('live_region', code);
   },
 
+  /** True once the viewer picked a country; until then Live follows the TV's. */
+  getLiveRegionPicked(): boolean {
+    return get<unknown>('live_region_picked', false) === true;
+  },
+  setLiveRegionPicked(picked: boolean): void {
+    set('live_region_picked', picked);
+  },
+
   /** Where Live was left, so the next launch opens on the same group. */
   getLiveLocation(): { group: string; playlist: string } | null {
     const value = get<unknown>('live_location', null);

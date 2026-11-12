@@ -52,6 +52,7 @@ import { $, show, hide } from './utils/dom';
 import { createLogger, installGlobalErrorHandlers, logEnvironment } from './utils/logger';
 import { FocusRing } from './navigation/focus-ring';
 import { BootGuard, sourceFingerprint } from './services/boot-guard';
+import { TvCountry } from './services/tv-country';
 import { Focus, type FocusScope } from './navigation/focus-scope';
 import type {
   Action,
@@ -115,6 +116,11 @@ class App {
     log.info('Initializing app');
     await StorageService.init();
     BootGuard.installExitHandlers();
+    // Asked early so the channel list opens on the TV's own country; a
+    // changed answer (first launch, or a moved TV) re-sorts it once.
+    void TvCountry.load().then((changed) => {
+      if (changed && this.channelList && this.isCurrentView('channels')) this.channelList.render(false);
+    });
     ParentalControlService.reload();
     StorageService.setPlaylistsReplacedHandler((previous, next) =>
       ParentalControlService.reviewChangedSources(previous, next));
