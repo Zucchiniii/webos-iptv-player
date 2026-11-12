@@ -581,4 +581,8 @@ export const PL_MESSAGES = {
   'settings.channelLayoutHint': 'Siatka pokazuje więcej kanałów naraz wraz z bieżącym programem. Lista jest zwarta.',
   'settings.hideOnDemand': 'Ukryj filmy i seriale w Na żywo',
   'settings.hideOnDemandHint': 'Wiele list podaje każdy film i odcinek jako kanał. Ukrycie ich sprawia, że Na żywo działa szybko i stabilnie na telewizorze.',
+  'settings.streamQuality': 'Jakość strumienia',
+  'settings.streamQualityMaximum': 'Maksymalna',
+  'settings.streamQualityStandard': 'Standardowa',
+  'settings.streamQualityHint': 'Maksymalna odtwarza kanały do 4K na telewizorze 4K i uruchamia je w pełnej jakości. Standardowa używa ustawień telewizora: do 1080p, z niskim startem.',
 } as const satisfies MessageCatalog;

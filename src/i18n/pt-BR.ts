@@ -551,4 +551,8 @@ export const PT_BR_MESSAGES = {
   'settings.channelLayoutHint': 'A grade mostra mais canais de uma vez com o que está passando agora. A lista é compacta.',
   'settings.hideOnDemand': 'Ocultar filmes e séries no Ao vivo',
   'settings.hideOnDemandHint': 'Muitas listas trazem cada filme e episódio como canal. Ocultá-los mantém o Ao vivo rápido e estável na TV.',
+  'settings.streamQuality': 'Qualidade do stream',
+  'settings.streamQualityMaximum': 'Máxima',
+  'settings.streamQualityStandard': 'Padrão',
+  'settings.streamQualityHint': 'Máxima reproduz os canais em até 4K em uma TV 4K e já começa com a melhor qualidade. Padrão usa os valores da TV: até 1080p, começando baixo.',
 } satisfies MessageCatalog;

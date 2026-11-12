@@ -250,7 +250,7 @@ export class PlayerOsd {
       <div class="osd-channel">
         <div class="osd-channel-number">${state.channelNumber}</div>
         ${state.channel.logo
-          ? html`<img class="osd-channel-logo" src="${state.channel.logo}" alt="">`
+          ? html`<img class="osd-channel-logo" src="${state.channel.logo}" alt="" decoding="async">`
           : ''}
         <div class="osd-channel-name">${state.channel.name}</div>
         ${this.renderStreamInfo(state.streamInfo)}
@@ -366,7 +366,7 @@ export class PlayerOsd {
    *  (no reload/flicker); the delegated error listener drops a broken one. */
   private programmeIcon(url: string): Safe | string {
     if (!url || this.failedIcons.has(url)) return '';
-    return html`<img class="osd-programme-icon" data-key="prog-icon:${url}" src="${url}" alt="">`;
+    return html`<img class="osd-programme-icon" data-key="prog-icon:${url}" src="${url}" alt="" decoding="async">`;
   }
 
   /** The shared OSD play/pause button (live DVR and catch-up). Pointer-hit-tested

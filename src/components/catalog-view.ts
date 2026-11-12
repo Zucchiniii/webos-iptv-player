@@ -12,6 +12,7 @@ import { Focus, type FocusScope, type Via } from '../navigation/focus-scope';
 import { FocusRing, ringShown } from '../navigation/focus-ring';
 import { InputMode } from '../navigation/input-mode';
 import { html, raw, Safe, withInstantScroll } from '../utils/dom';
+import { sizedArtwork, type ArtworkSize } from '../utils/artwork';
 import { categoryLockBadge, lockBadge } from './parental-badge';
 import { SORT_ASCENDING_ICON, SORT_DESCENDING_ICON, SEE_ALL_ICON, REMOVE_ICON, CHECK_ICON, TRASH_ICON, PENCIL_ICON } from './icons';
 import { ConfirmationPrompt } from './confirmation-prompt';
@@ -68,6 +69,8 @@ const RAIL_PLACEHOLDER_TILES = 8;
 
 // Matches the rail track's padding and its end spacer in catalog-view.css.
 const RAIL_EDGE_GUTTER = 16;
+// How long focus rests on a title before its hero backdrop is looked up.
+const HERO_BACKDROP_DELAY_MS = 450;
 
 export interface CatalogHandlers {
   onRevealTabBar: () => void;
@@ -149,6 +152,10 @@ const STAR_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l
 export abstract class CatalogView<C extends { id: string; name: string }, I extends CatalogSortItem> {
   // The title the hero currently shows, so a re-render can put its meta back.
   private heroItem: I | null = null;
+  // Hero backdrops by title id ('' = the title has none), and the pending lookup.
+  private backdrops = new Map<string, string>();
+  private backdropTimer: ReturnType<typeof setTimeout> | null = null;
+  private backdropAbort: AbortController | null = null;
 
   protected nav: SpatialNav;
   protected account: PlaylistEntry | null = null;
@@ -1220,10 +1227,55 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
     this.heroItem = item;
     const meta = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-meta');
     if (meta) morph(meta, this.heroMeta(item));
+    hero.classList.remove('catalog-hero--backdrop');
     // Poster sits inside a CSS url('…') string; percent-encode the characters
     // that could break out of it (matches renderBrowse's heroBg).
-    const bg = poster ? poster.replace(/["'()\\\s]/g, encodeURIComponent) : '';
+    const bg = poster ? sizedArtwork(poster, 'w780').replace(/["'()\\\s]/g, encodeURIComponent) : '';
     hero.style.backgroundImage = bg ? `url('${bg}')` : 'none';
+    this.scheduleBackdrop(item);
+  }
+
+  // Wide artwork for the hero, from the title's details: a widescreen
+  // backdrop is sharp across 1920px where a stretched portrait poster blurs.
+  // Fetched once focus rests, swapped in only after it has loaded.
+  protected heroBackdrop(_item: I, _signal: AbortSignal): Promise<string> {
+    return Promise.resolve('');
+  }
+
+  private scheduleBackdrop(item: I | null): void {
+    if (this.backdropTimer !== null) clearTimeout(this.backdropTimer);
+    this.backdropTimer = null;
+    this.backdropAbort?.abort();
+    this.backdropAbort = null;
+    if (!item) return;
+    const id = this.itemId(item);
+    const known = this.backdrops.get(id);
+    if (known !== undefined) {
+      if (known) this.showBackdrop(item, known);
+      return;
+    }
+    this.backdropTimer = setTimeout(() => {
+      this.backdropTimer = null;
+      const controller = new AbortController();
+      this.backdropAbort = controller;
+      this.heroBackdrop(item, controller.signal).then((url) => {
+        this.backdrops.set(id, url);
+        if (!url || controller.signal.aborted) return;
+        const image = new Image();
+        image.onload = () => {
+          if (!controller.signal.aborted) this.showBackdrop(item, url);
+        };
+        image.src = url;
+      }, () => { /* a failed lookup keeps the poster */ });
+    }, HERO_BACKDROP_DELAY_MS);
+  }
+
+  private showBackdrop(item: I, url: string): void {
+    if (this.heroItem !== item) return;
+    const hero = this.layers.browse.querySelector<HTMLElement>('.catalog-hero');
+    if (!hero) return;
+    hero.style.backgroundImage = `url('${url.replace(/["'()\\\s]/g, encodeURIComponent)}')`;
+    hero.classList.add('catalog-hero--backdrop');
   }
 
   // Concealed titles are dropped at load, so every rail, grid, and hero built
@@ -1352,9 +1404,9 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
     this.renderGrid();
   }
 
-  protected posterCell(name: string, poster: string): Safe {
+  protected posterCell(name: string, poster: string, size: ArtworkSize = 'w342'): Safe {
     return poster
-      ? html`<img class="catalog-poster" src="${poster}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? html`<img class="catalog-poster" src="${sizedArtwork(poster, size)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
       : html`<div class="catalog-poster catalog-poster-empty">${name.charAt(0)}</div>`;
   }
 
@@ -1581,29 +1633,39 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
 
   // The hero a focused title put up in place of the leading one, which a
   // rail landing re-render keeps whatever the focus rests on.
-  private pickedHero(): { name: string; background: string; item: I | null } | null {
+  private pickedHero(): { name: string; background: string; backdrop: boolean; item: I | null } | null {
     const hero = this.layers.browse.querySelector<HTMLElement>('.catalog-hero');
     const name = this.layers.browse.querySelector('.catalog-hero-title')?.textContent ?? '';
     if (!hero) return null;
     const leading = this.leadingHero();
     if (name === (leading ? this.itemName(leading) : this.kicker)) return null;
-    return { name, background: hero.style.backgroundImage, item: this.heroItem };
+    return {
+      name,
+      background: hero.style.backgroundImage,
+      backdrop: hero.classList.contains('catalog-hero--backdrop'),
+      item: this.heroItem,
+    };
   }
 
-  private restoreHero(picked: { name: string; background: string; item: I | null }): void {
+  private restoreHero(picked: { name: string; background: string; backdrop: boolean; item: I | null }): void {
     const hero = this.layers.browse.querySelector<HTMLElement>('.catalog-hero');
     const title = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-title');
     const meta = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-meta');
-    if (hero) hero.style.backgroundImage = picked.background;
+    if (hero) {
+      hero.style.backgroundImage = picked.background;
+      hero.classList.toggle('catalog-hero--backdrop', picked.backdrop);
+    }
     if (title) title.textContent = picked.name;
     this.heroItem = picked.item;
     if (meta) morph(meta, this.heroMeta(picked.item));
+    // The re-render scheduled the leading title's backdrop; the picked one wins.
+    this.scheduleBackdrop(picked.item);
   }
 
   // Wide artwork behind a detail page; the poster stands in when the panel
   // sends none. Percent-encoded like the hero for the CSS url() string.
   protected detailBackdrop(url: string): Safe {
-    const bg = url.replace(/["'()\\\s]/g, encodeURIComponent);
+    const bg = sizedArtwork(url, 'w1280').replace(/["'()\\\s]/g, encodeURIComponent);
     return bg
       ? html`<div class="detail-backdrop" style="background-image: url('${bg}')"></div>`
       : html``;
@@ -1739,7 +1801,7 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
     // A poster URL sits inside a CSS url('…') string, where the html escaper's
     // entity encoding is decoded before CSS parses it; percent-encode the
     // characters that could break out of the string.
-    const heroBg = hero ? this.itemPoster(hero).replace(/["'()\\\s]/g, encodeURIComponent) : '';
+    const heroBg = hero ? sizedArtwork(this.itemPoster(hero), 'w780').replace(/["'()\\\s]/g, encodeURIComponent) : '';
     this.heroItem = hero;
     // Once some categories have no rail, "All Categories" lists every category,
     // rails included, so it is the one complete index of the catalog.
@@ -1821,6 +1883,7 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
       this.resetBrowseRailOffsets = false;
     }
     if (restoreFocus) this.restoreBrowseFocus();
+    if (this.heroItem === hero) this.scheduleBackdrop(hero);
     this.railsDirty = false;
     this.requestNearRails();
   }

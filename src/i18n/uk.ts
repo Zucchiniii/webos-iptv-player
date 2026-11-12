@@ -581,4 +581,8 @@ export const UK_MESSAGES = {
   'settings.channelLayoutHint': 'Сітка показує більше каналів одразу й що йде зараз. Список компактніший.',
   'settings.hideOnDemand': 'Приховувати фільми й серіали в Ефірі',
   'settings.hideOnDemandHint': 'Багато плейлистів подають кожен фільм і серію як канал. Якщо їх приховати, Ефір на телевізорі працює швидко й стабільно.',
+  'settings.streamQuality': 'Якість потоку',
+  'settings.streamQualityMaximum': 'Максимальна',
+  'settings.streamQualityStandard': 'Стандартна',
+  'settings.streamQualityHint': 'Максимальна: на 4K-телевізорі канали йдуть до 4K і одразу в повній якості. Стандартна: налаштування телевізора — до 1080p і з низького старту.',
 } satisfies MessageCatalog;

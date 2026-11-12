@@ -551,4 +551,8 @@ export const ES_MESSAGES = {
   'settings.channelLayoutHint': 'La cuadrícula muestra más canales a la vez con lo que se emite ahora. La lista es compacta.',
   'settings.hideOnDemand': 'Ocultar películas y series en En vivo',
   'settings.hideOnDemandHint': 'Muchas listas incluyen cada película y episodio como canal. Ocultarlos mantiene En vivo rápido y estable en la TV.',
+  'settings.streamQuality': 'Calidad de transmisión',
+  'settings.streamQualityMaximum': 'Máxima',
+  'settings.streamQualityStandard': 'Estándar',
+  'settings.streamQualityHint': 'Máxima reproduce los canales hasta 4K en un televisor 4K y los inicia con la mejor calidad. Estándar usa los valores del televisor: hasta 1080p, con un inicio bajo.',
 } satisfies MessageCatalog;

@@ -551,4 +551,8 @@ export const FR_MESSAGES = {
   'settings.channelLayoutHint': 'La grille affiche plus de chaînes à la fois avec le programme en cours. La liste est compacte.',
   'settings.hideOnDemand': 'Masquer films et séries dans Direct',
   'settings.hideOnDemandHint': 'Beaucoup de listes présentent chaque film et épisode comme une chaîne. Les masquer garde Direct rapide et stable sur la TV.',
+  'settings.streamQuality': 'Qualité du flux',
+  'settings.streamQualityMaximum': 'Maximale',
+  'settings.streamQualityStandard': 'Standard',
+  'settings.streamQualityHint': 'Maximale lit les chaînes jusqu’en 4K sur un téléviseur 4K et les démarre en pleine qualité. Standard utilise les réglages du téléviseur : jusqu’en 1080p, avec un démarrage bas.',
 } satisfies MessageCatalog;

@@ -46,6 +46,8 @@ const GRID_COLUMNS = 4;
 const GRID_ROW_STRIDE = 144;
 const GRID_OVERSCAN = 3;
 const GRID_VIEWPORT_FALLBACK = 740;
+// How long focus must rest before the header catches up during a held key.
+const HERO_SETTLE_MS = 140;
 
 type PreviewHintState = 'off' | 'ready' | 'active';
 type RowList = 'group' | 'channel';
@@ -107,6 +109,9 @@ export class ChannelList {
   // Channels per row this render: the card grid, or 1 for the list.
   private columns = 1;
   private renderedColumns = 0;
+  private heroPainted = '';
+  private heroMovedAt = 0;
+  private heroTimer: ReturnType<typeof setTimeout> | null = null;
   // The country Live is narrowed to ('' = every country).
   private currentRegion = '';
   // A country the viewer picked sticks; otherwise Live follows the TV's own.
@@ -447,7 +452,7 @@ export class ChannelList {
           </div>
         </div>
         <div class="channel-stage ${grid ? 'grid-mode' : ''}">
-        ${grid ? html`<div class="channel-hero" data-key="channel-hero">${this.heroContent()}</div>` : ''}
+        ${grid ? html`<div class="channel-hero" data-key="channel-hero" data-morph-preserve></div>` : ''}
         <div class="channel-main" data-nav-container data-nav-enter="last-focused">
           <div class="channel-list-scroll ${showingRecent ? 'recent-list' : ''} ${grid ? 'channel-grid' : ''}">
             ${showingRecent
@@ -514,7 +519,7 @@ export class ChannelList {
       this.scrollGuard.syncOffset(main, 'vertical', virt.scrollOffset);
     }
     this.renderedColumns = this.columns;
-    this.updateHero();
+    this.updateHero(true);
     if (main) this.updateChannelScrollbar(main);
     const groupList = this.container.querySelector<HTMLElement>('.group-list');
     if (groupList) {
@@ -1224,7 +1229,7 @@ export class ChannelList {
     if (!ch.logo) {
       logo = html`<div class="channel-logo-placeholder">${ch.name.charAt(0)}</div>`;
     } else if (!this.failedLogos.has(ch.logo)) {
-      logo = html`<img class="channel-logo" src="${ch.logo}" alt="" loading="lazy">`;
+      logo = html`<img class="channel-logo" src="${ch.logo}" alt="" loading="lazy" decoding="async">`;
     }
 
     return html`
@@ -1599,10 +1604,46 @@ export class ChannelList {
     `;
   }
 
-  private updateHero(): void {
+  // The header follows focus, but a held key moves focus every ~80ms: it
+  // repaints once focus settles instead of on every step it passes. A
+  // re-render (`refresh`) repaints only when what it shows has changed.
+  private updateHero(refresh = false): void {
     if (this.columns <= 1) return;
     const hero = this.container.querySelector<HTMLElement>('.channel-hero');
-    if (hero) morph(hero, html`${this.heroContent()}`);
+    if (!hero) return;
+    const key = this.heroKey();
+    if (key === this.heroPainted && hero.firstChild) return;
+    if (this.heroTimer !== null) {
+      clearTimeout(this.heroTimer);
+      this.heroTimer = null;
+    }
+    const now = Date.now();
+    const held = !refresh && now - this.heroMovedAt < CONFIG.NAVIGATION.FOCUS_REPEAT_WINDOW_MS;
+    if (!refresh) this.heroMovedAt = now;
+    if (held && hero.firstChild) {
+      this.heroTimer = setTimeout(() => {
+        this.heroTimer = null;
+        this.paintHero();
+      }, HERO_SETTLE_MS);
+      return;
+    }
+    this.paintHero();
+  }
+
+  private paintHero(): void {
+    const hero = this.container.querySelector<HTMLElement>('.channel-hero');
+    if (!hero || this.columns <= 1) return;
+    this.heroPainted = this.heroKey();
+    morph(hero, html`${this.heroContent()}`);
+  }
+
+  // What the header shows: the channel and the program on it now.
+  private heroKey(): string {
+    const ch = this.heroChannel();
+    if (!ch) return '';
+    const epgId = EpgService.findChannelId(ch);
+    const now = epgId ? EpgService.getNowPlaying(epgId) : null;
+    return `${String(PlaylistService.indexOf(ch))}|${now ? `${String(now.start.getTime())}|${now.title}` : ''}`;
   }
 
   private renderChannelCard(ch: Channel, favs: string[], position: number, top: number): Safe {

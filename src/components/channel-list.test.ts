@@ -1331,12 +1331,15 @@ describe('ChannelList card grid and countries', () => {
     expect(container.querySelector<HTMLElement>('.channel-list-spacer')?.style.height).toBe('432px');
   });
 
-  it('moves a row with Up and Down and a card with Left and Right', () => {
+  it('moves a row with Up and Down and a card with Left and Right', async () => {
     list.render();
     list.handleAction('down');
     expect(focusedPosition()).toBe('4');
     list.handleAction('right');
     expect(focusedPosition()).toBe('5');
+    // Steps faster than a held key's repeat: the header waits for focus to rest.
+    expect(container.querySelector('.channel-hero .channel-hero-name')?.textContent).not.toBe('Channel 5');
+    await new Promise(resolve => setTimeout(resolve, 200));
     expect(container.querySelector('.channel-hero .channel-hero-name')?.textContent).toBe('Channel 5');
     list.handleAction('up');
     expect(focusedPosition()).toBe('1');

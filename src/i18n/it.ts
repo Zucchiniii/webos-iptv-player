@@ -549,4 +549,8 @@ export const IT_MESSAGES = {
   'settings.channelLayoutHint': 'La griglia mostra più canali insieme a cosa va in onda ora. L’elenco è compatto.',
   'settings.hideOnDemand': 'Nascondi film e serie in Diretta',
   'settings.hideOnDemandHint': 'Molte playlist elencano ogni film ed episodio come canale. Nasconderli mantiene la Diretta veloce e stabile sulla TV.',
+  'settings.streamQuality': 'Qualità dello streaming',
+  'settings.streamQualityMaximum': 'Massima',
+  'settings.streamQualityStandard': 'Standard',
+  'settings.streamQualityHint': 'Massima riproduce i canali fino al 4K su un TV 4K e li avvia alla massima qualità. Standard usa le impostazioni del TV: fino a 1080p, con avvio basso.',
 } satisfies MessageCatalog;

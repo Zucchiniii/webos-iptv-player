@@ -1175,3 +1175,15 @@
   border-color: var(--accent);
   color: #fff;
 }
+
+/* On the TV the picture is a hardware video plane under the page, so the page
+   holds nothing behind these panels to blur and the filter only spends GPU
+   time while video plays. The panels stay readable as near-opaque glass. */
+html.is-webos .player-osd,
+html.is-webos .player-sidebar,
+html.is-webos .player-menu,
+html.is-webos .subs-overlay,
+html.is-webos .subs-offset-card,
+html.is-webos .number-entry {
+  backdrop-filter: none;
+}

@@ -763,7 +763,7 @@ export class Search {
 
   private posterCell(name: string, poster: string): ReturnType<typeof html> {
     return poster
-      ? html`<img class="catalog-poster" src="${poster}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? html`<img class="catalog-poster" src="${poster}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
       : html`<div class="catalog-poster catalog-poster-empty">${name.charAt(0)}</div>`;
   }
 
@@ -861,7 +861,7 @@ export class Search {
       <div class="search-channel-row" data-focusable data-key="ch:${String(idx)}"
            data-channel-index="${String(idx)}">
         ${ch.logo
-          ? html`<img class="search-row-logo" src="${ch.logo}" alt="" loading="lazy" onerror="this.style.display='none'">`
+          ? html`<img class="search-row-logo" src="${ch.logo}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
           : html`<div class="search-row-logo search-row-logo-empty">${ch.name.charAt(0)}</div>`}
         <span class="search-row-name">${raw(channelLockBadge(ch))}${ch.name}</span>
       </div>

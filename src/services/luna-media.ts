@@ -120,6 +120,7 @@ export function buildLoadParameters(
   windowId: string,
   headers: Record<string, string>,
   playReadyClientId = '',
+  adaptiveStreaming: Record<string, unknown> | null = null,
 ): Record<string, unknown> {
   const fields = splitHeaders(headers);
   const httpHeader: Record<string, string> = {};
@@ -133,6 +134,9 @@ export function buildLoadParameters(
   if (Object.keys(transmission).length) option.transmission = transmission;
   // The license request is the DRM client's own; it never carries these headers.
   if (playReadyClientId) option.drm = { type: 'playready', clientId: playReadyClientId };
+  // UMS reads the same mediaOption fields as a <source>: without them it caps
+  // adaptive streams at 1080p and starts low.
+  if (adaptiveStreaming) option.adaptiveStreaming = adaptiveStreaming;
   return {
     uri,
     type: 'media',

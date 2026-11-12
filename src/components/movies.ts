@@ -3,6 +3,7 @@ import { html, raw, Safe } from '../utils/dom';
 import { morph } from '../utils/morph';
 import { StorageService } from '../services/storage-service';
 import { loadVodCategories, loadVodStreams, loadVodInfo } from '../services/xtream-catalog';
+import { sizedArtwork } from '../utils/artwork';
 import { xtreamVodUrl } from '../utils/xtream-url';
 import { CatalogView, type CollectionKind, type CollectionEntry } from './catalog-view';
 import { PLAY_ICON, REMOVE_ICON, watchlistIcon } from './icons';
@@ -235,6 +236,13 @@ export class Movies extends CatalogView<VodCategory, VodItem> {
     );
   }
 
+  protected async heroBackdrop(item: VodItem, signal: AbortSignal): Promise<string> {
+    const account = this.account;
+    if (!account) return '';
+    const info = await loadVodInfo(account, item.streamId, signal);
+    return info?.backdrop ? sizedArtwork(info.backdrop, 'w1280') : '';
+  }
+
   protected renderDetail(): void {
     const vod = this.currentVod;
     const a = this.account;
@@ -252,7 +260,7 @@ export class Movies extends CatalogView<VodCategory, VodItem> {
     morph(this.layer('detail'), html`
       <div class="catalog-view movies-detail" data-nav-container>
         ${this.detailBackdrop(info?.backdrop || poster)}
-        <div class="detail-poster-wrap">${this.posterCell(vod.name, poster)}</div>
+        <div class="detail-poster-wrap">${this.posterCell(vod.name, poster, 'w500')}</div>
         <div class="detail-body">
           <h1 class="detail-title">${vod.name}</h1>
           <div class="detail-meta">${meta.join('  ·  ')}</div>

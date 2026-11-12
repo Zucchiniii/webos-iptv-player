@@ -3,6 +3,7 @@ import { html, raw, Safe } from '../utils/dom';
 import { morph } from '../utils/morph';
 import { StorageService } from '../services/storage-service';
 import { loadSeriesCategories, loadSeries, loadSeriesInfo } from '../services/xtream-catalog';
+import { sizedArtwork } from '../utils/artwork';
 import { xtreamEpisodeUrl, type XtreamCredentials } from '../utils/xtream-url';
 import { CatalogView, type CatalogHandlers, type CollectionKind, type CollectionEntry } from './catalog-view';
 import { PLAY_ICON, watchlistIcon } from './icons';
@@ -292,6 +293,13 @@ export class Series extends CatalogView<SeriesCategory, SeriesItem> {
     `;
   }
 
+  protected async heroBackdrop(item: SeriesItem, signal: AbortSignal): Promise<string> {
+    const account = this.account;
+    if (!account) return '';
+    const info = await loadSeriesInfo(account, item.seriesId, signal);
+    return info?.backdrop ? sizedArtwork(info.backdrop, 'w1280') : '';
+  }
+
   protected renderDetail(restoreFocus = true): void {
     const series = this.currentSeries;
     const a = this.account;
@@ -334,7 +342,7 @@ export class Series extends CatalogView<SeriesCategory, SeriesItem> {
       <div class="catalog-view series-detail" data-nav-container>
         ${this.detailBackdrop(info?.backdrop || poster)}
         <div class="series-detail-head">
-          <div class="detail-poster-wrap series-detail-poster">${this.posterCell(series.name, poster)}</div>
+          <div class="detail-poster-wrap series-detail-poster">${this.posterCell(series.name, poster, 'w500')}</div>
           <div class="detail-body">
             <h1 class="detail-title">${series.name}</h1>
             ${meta.length ? html`<div class="detail-meta">${meta.join('  ·  ')}</div>` : ''}

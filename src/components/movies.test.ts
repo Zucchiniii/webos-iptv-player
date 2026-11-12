@@ -511,6 +511,51 @@ describe('Movies browse + grid', () => {
     expect(hero.style.backgroundImage).toContain('p1.jpg');
   });
 
+  it('swaps in a sized widescreen backdrop once focus rests on a title', async () => {
+    const m1 = { accountId: 'x1', streamId: '10', name: 'Movie One', poster: 'http://host/p1.jpg', rating: '', categoryId: '1', containerExtension: 'mp4' };
+    const m2 = { accountId: 'x1', streamId: '11', name: 'Movie Two', poster: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/p2.jpg', rating: '', categoryId: '1', containerExtension: 'mp4' };
+    catalogMock.loadVodInfo.mockImplementation(async (_account: unknown, id: string) => ({
+      backdrop: id === '11' ? 'https://image.tmdb.org/t/p/original/bd.jpg' : '',
+    }));
+    class LoadedImage {
+      onload: (() => void) | null = null;
+      set src(_value: string) { setTimeout(() => this.onload?.(), 0); }
+    }
+    vi.stubGlobal('Image', LoadedImage);
+    try {
+      await openWith([{ id: '1', name: 'Cat A' }], [m1, m2]);
+      const hero = container.querySelector<HTMLElement>('.catalog-hero')!;
+      container.querySelector('.catalog-tile[data-item-id="11"]')!
+        .dispatchEvent(new CustomEvent('nav:hover', { bubbles: true }));
+      // The poster first, at the hero's size, while focus may still move on.
+      expect(hero.style.backgroundImage).toContain('/t/p/w780/p2.jpg');
+      await new Promise(resolve => setTimeout(resolve, 600));
+      expect(hero.style.backgroundImage).toContain('/t/p/w1280/bd.jpg');
+      expect(hero.classList.contains('catalog-hero--backdrop')).toBe(true);
+
+      container.querySelector('.catalog-tile[data-item-id="10"]')!
+        .dispatchEvent(new CustomEvent('nav:hover', { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 600));
+      expect(hero.style.backgroundImage).toContain('p1.jpg');
+      expect(hero.classList.contains('catalog-hero--backdrop')).toBe(false);
+      // Coming back shows the known backdrop at once.
+      container.querySelector('.catalog-tile[data-item-id="11"]')!
+        .dispatchEvent(new CustomEvent('nav:hover', { bubbles: true }));
+      expect(hero.style.backgroundImage).toContain('/t/p/w1280/bd.jpg');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('asks for posters at the size a tile draws', async () => {
+    await openWith([{ id: '1', name: 'Cat A' }], [{
+      accountId: 'x1', streamId: '12', name: 'Movie', poster: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/x.jpg',
+      rating: '', categoryId: '1', containerExtension: 'mp4',
+    }]);
+    expect(container.querySelector<HTMLImageElement>('.catalog-tile .catalog-poster')?.getAttribute('src'))
+      .toBe('https://image.tmdb.org/t/p/w342/x.jpg');
+  });
+
   it('shows a Continue rail from the resume list', async () => {
     const { StorageService } = await import('../services/storage-service');
     (StorageService.getResumeList as ReturnType<typeof vi.fn>).mockReturnValue([

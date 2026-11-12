@@ -734,6 +734,7 @@ export class Settings {
     const epgSources = this.epgSources(manualEpgSources, allPlaylists);
     const autoPlay = StorageService.getAutoPlay();
     const liveLayout = StorageService.getLiveLayout();
+    const streamQuality = StorageService.getStreamQuality();
     const hideOnDemand = StorageService.getHideOnDemandInLive();
     const livePreview = StorageService.getLivePreview();
     const channelCycleMode = StorageService.getChannelCycleMode();
@@ -993,6 +994,14 @@ export class Settings {
                 <div class="settings-item">
                   <div class="settings-item-title">${t('settings.autoPlay')}</div>
                   ${toggleGroup('auto-play', [{ value: 'on', label: t('settings.on') }, { value: 'off', label: t('settings.off') }], autoPlay ? 'on' : 'off')}
+                </div>
+                <div class="settings-item">
+                  <div class="settings-item-title">${t('settings.streamQuality')}</div>
+                  ${toggleGroup('stream-quality', [
+                    { value: 'maximum', label: t('settings.streamQualityMaximum') },
+                    { value: 'standard', label: t('settings.streamQualityStandard') },
+                  ], streamQuality)}
+                  <div class="settings-item-hint">${t('settings.streamQualityHint')}</div>
                 </div>
                 <div class="settings-item">
                   <div class="settings-item-title">${t('settings.livePreview')}</div>
@@ -2875,6 +2884,11 @@ export class Settings {
 
     const livePreviewBtn = $('#live-preview-setting .toggle-option.active', this.container);
     if (livePreviewBtn) StorageService.setLivePreview(livePreviewBtn.dataset.value === 'on');
+
+    const streamQualityBtn = $('#stream-quality .toggle-option.active', this.container);
+    if (streamQualityBtn?.dataset.value === 'maximum' || streamQualityBtn?.dataset.value === 'standard') {
+      StorageService.setStreamQuality(streamQualityBtn.dataset.value);
+    }
 
     const liveLayoutBtn = $('#live-layout .toggle-option.active', this.container);
     if (liveLayoutBtn?.dataset.value === 'grid' || liveLayoutBtn?.dataset.value === 'list') {

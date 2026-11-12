@@ -553,6 +553,10 @@ export const EN_MESSAGES = {
   'settings.channelLayoutHint': 'Grid shows more channels at once with what\'s on now. List is compact.',
   'settings.hideOnDemand': 'Hide movies and series in Live',
   'settings.hideOnDemandHint': 'Many playlists list every movie and episode as a channel. Hiding them keeps Live fast and stable on the TV.',
+  'settings.streamQuality': 'Stream quality',
+  'settings.streamQualityMaximum': 'Maximum',
+  'settings.streamQualityStandard': 'Standard',
+  'settings.streamQualityHint': 'Maximum plays channels up to 4K on a 4K TV and starts them at full quality. Standard uses the TV\'s defaults: up to 1080p, starting low.',
 } as const;
 
 export type MessageKey = keyof typeof EN_MESSAGES;

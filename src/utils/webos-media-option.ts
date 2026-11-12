@@ -7,6 +7,11 @@ export interface WebOSMediaOption {
       type: 'playready';
       clientId: string;
     };
+    adaptiveStreaming?: {
+      maxWidth: number;
+      maxHeight: number;
+      bps?: { start: number };
+    };
   };
 }
 

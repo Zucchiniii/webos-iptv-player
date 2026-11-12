@@ -536,4 +536,8 @@ export const ZH_CN_MESSAGES = {
   'settings.channelLayoutHint': '网格可同时显示更多频道及正在播出的节目。列表更紧凑。',
   'settings.hideOnDemand': '在直播中隐藏电影和剧集',
   'settings.hideOnDemandHint': '许多播放列表把每部电影和每一集都列为频道。隐藏它们可让直播在电视上保持流畅稳定。',
+  'settings.streamQuality': '串流画质',
+  'settings.streamQualityMaximum': '最高',
+  'settings.streamQualityStandard': '标准',
+  'settings.streamQualityHint': '最高：在 4K 电视上频道最高以 4K 播放，并以最佳画质起播。标准：使用电视默认设置，最高 1080p，起播画质较低。',
 } satisfies MessageCatalog;

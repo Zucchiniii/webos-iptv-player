@@ -38,6 +38,7 @@ import { LunaMediaElement, type LunaAudioTrack, type LunaFallbackReason } from '
 import { parseClosedCaptions, parseSubtitleRenditions } from '../utils/subtitle-tracks';
 import { parseVariants, type StreamVariant } from '../utils/stream-info';
 import { mediaOptionSourceType } from '../utils/webos-media-option';
+import { StreamQuality } from '../services/stream-quality';
 import { createHlsEngine } from './mse/hls-engine';
 import type { MseEngine, PipelineStreamInfo } from './mse/engine';
 import { createShakaEngine, type ShakaPlayerLike } from './mse/shaka-engine';
@@ -1408,6 +1409,8 @@ export class PlayerPipeline {
       headers,
       transport: dash ? 'MPEG-DASH' : 'HLS',
       playReadyClientId: dash?.clientId || undefined,
+      // LG documents the start bitrate for HLS; DASH keeps its tuned defaults.
+      adaptiveStreaming: dash ? null : StreamQuality.adaptiveStreaming() as Record<string, unknown> | null,
       label,
       onFallback: (fallback, code, stage, unsupported) => {
         if (this.luna !== luna) return;
@@ -1682,7 +1685,7 @@ export class PlayerPipeline {
     videoEl.innerHTML = '';
     const source = document.createElement('source');
     source.src = url;
-    if (mime) source.type = mime;
+    if (mime) source.type = nativeSourceType(mime);
     videoEl.appendChild(source);
     videoEl.load();
     const seq = ++this.nativePlaySeq;
@@ -2128,4 +2131,19 @@ export class PlayerPipeline {
     this.manifestController?.abort();
     this.manifestController = null;
   }
+}
+
+const HLS_MIME = 'application/vnd.apple.mpegurl';
+
+/**
+ * The <source> type for the TV's native player. HLS carries the adaptive
+ * limits (see StreamQuality): without them webOS caps renditions at 1080p and
+ * starts each stream low. Other formats and desktop playback pass through.
+ */
+export function nativeSourceType(mime: string): string {
+  if (mime !== HLS_MIME || !isWebOS()) return mime;
+  const adaptiveStreaming = StreamQuality.adaptiveStreaming();
+  return adaptiveStreaming
+    ? mediaOptionSourceType(mime, { mediaTransportType: 'HLS', option: { adaptiveStreaming } })
+    : mime;
 }

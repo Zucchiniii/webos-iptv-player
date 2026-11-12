@@ -551,4 +551,8 @@ export const DE_MESSAGES = {
   'settings.channelLayoutHint': 'Das Raster zeigt mehr Sender auf einmal mit dem laufenden Programm. Die Liste ist kompakt.',
   'settings.hideOnDemand': 'Filme und Serien in Live ausblenden',
   'settings.hideOnDemandHint': 'Viele Wiedergabelisten führen jeden Film und jede Folge als Sender. Ausgeblendet bleibt Live auf dem Fernseher schnell und stabil.',
+  'settings.streamQuality': 'Streamqualität',
+  'settings.streamQualityMaximum': 'Maximal',
+  'settings.streamQualityStandard': 'Standard',
+  'settings.streamQualityHint': 'Maximal spielt Sender auf einem 4K-Fernseher bis 4K ab und startet sie in voller Qualität. Standard nutzt die Vorgaben des Fernsehers: bis 1080p, niedriger Start.',
 } satisfies MessageCatalog;

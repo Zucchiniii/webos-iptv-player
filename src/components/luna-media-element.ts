@@ -34,6 +34,8 @@ export interface LunaMediaElementOptions {
   transport?: LunaTransport;
   /** A loaded PlayReady DRM client, for protected DASH. */
   playReadyClientId?: string;
+  /** Adaptive limits for the native player (resolution ceiling, start bitrate). */
+  adaptiveStreaming?: Record<string, unknown> | null;
   /** The playback label (`session=… load=…`) its diag events carry. */
   label: string;
   /**
@@ -378,7 +380,7 @@ export class LunaMediaElement {
     try {
       mediaId = await loadMedia(buildLoadParameters(
         this.options.uri, this.options.transport ?? 'HLS', __APP_ID__, windowId, this.options.headers,
-        this.options.playReadyClientId));
+        this.options.playReadyClientId, this.options.adaptiveStreaming ?? null));
     } catch (error) {
       if (this.state === 'starting') this.fail('load_failed', errorCode(error), 'load');
       return;

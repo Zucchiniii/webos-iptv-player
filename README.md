@@ -12,6 +12,17 @@
   </p>
 </div>
 
+## What's new in 2.1
+
+- **Sharper picture.** The TV's native player caps adaptive streams at 1080p and starts every
+  channel low unless the app asks otherwise. On a 4K TV, channels now play up to 2160p and start
+  at full quality (Settings → Playback → Stream quality; Standard restores the TV's defaults).
+- **Sharper artwork, less memory.** Movie and series heroes switch to the title's widescreen
+  backdrop once focus rests; posters are fetched at the size they're drawn.
+- **Smoother navigation.** Focus changes animate only on the compositor, big blurred shadows are
+  gone from focus states, the channel header waits while a key is held, and the player panels skip
+  a blur the TV's video plane can't show.
+
 ## What's new in 2.0 (this fork)
 
 - **Stable with huge playlists.** Movies and series that M3U lists mix into Live are filtered out

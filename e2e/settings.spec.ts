@@ -334,7 +334,8 @@ test.describe('Settings navigation', () => {
       fixtures.remove();
       return result;
     });
-    expect(motion.channelRow).toBe('0.2s');
+    // Each faded property (colors, not the costly glow) takes the 0.2s.
+    expect(motion.channelRow.split(', ').every(duration => duration === '0.2s')).toBe(true);
     expect(motion.sidebarRow).toBe('0.2s');
     expect(motion.playingIndicator).toBe('pulse');
     expect(motion.historyScrim).toBe('search-history-in');

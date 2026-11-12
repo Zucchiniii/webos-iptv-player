@@ -536,4 +536,8 @@ export const TR_MESSAGES = {
   'settings.channelLayoutHint': 'Izgara, şu an yayında olanla birlikte aynı anda daha fazla kanal gösterir. Liste daha sadedir.',
   'settings.hideOnDemand': 'Canlı’da film ve dizileri gizle',
   'settings.hideOnDemandHint': 'Birçok liste her filmi ve bölümü kanal olarak verir. Gizlemek Canlı’yı TV’de hızlı ve kararlı tutar.',
+  'settings.streamQuality': 'Yayın kalitesi',
+  'settings.streamQualityMaximum': 'En yüksek',
+  'settings.streamQualityStandard': 'Standart',
+  'settings.streamQualityHint': 'En yüksek, 4K TV’de kanalları 4K’ya kadar oynatır ve tam kaliteyle başlatır. Standart, TV’nin varsayılanlarını kullanır: 1080p’ye kadar, düşük başlangıç.',
 } as const satisfies MessageCatalog;

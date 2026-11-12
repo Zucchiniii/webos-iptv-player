@@ -581,4 +581,8 @@ export const RU_MESSAGES = {
   'settings.channelLayoutHint': 'Сетка показывает больше каналов сразу и что идёт сейчас. Список компактнее.',
   'settings.hideOnDemand': 'Скрывать фильмы и сериалы в Эфире',
   'settings.hideOnDemandHint': 'Многие плейлисты выдают каждый фильм и серию как канал. Если их скрыть, Эфир на телевизоре работает быстро и стабильно.',
+  'settings.streamQuality': 'Качество потока',
+  'settings.streamQualityMaximum': 'Максимальное',
+  'settings.streamQualityStandard': 'Стандартное',
+  'settings.streamQualityHint': 'Максимальное: на 4K-телевизоре каналы идут до 4K и сразу в полном качестве. Стандартное: настройки телевизора — до 1080p и с низкого старта.',
 } satisfies MessageCatalog;

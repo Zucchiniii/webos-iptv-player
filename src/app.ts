@@ -53,6 +53,8 @@ import { createLogger, installGlobalErrorHandlers, logEnvironment } from './util
 import { FocusRing } from './navigation/focus-ring';
 import { BootGuard, sourceFingerprint } from './services/boot-guard';
 import { TvCountry } from './services/tv-country';
+import { StreamQuality } from './services/stream-quality';
+import { isWebOS } from './utils/platform';
 import { Focus, type FocusScope } from './navigation/focus-scope';
 import type {
   Action,
@@ -118,6 +120,7 @@ class App {
     BootGuard.installExitHandlers();
     // Asked early so the channel list opens on the TV's own country; a
     // changed answer (first launch, or a moved TV) re-sorts it once.
+    void StreamQuality.load();
     void TvCountry.load().then((changed) => {
       if (changed && this.channelList && this.isCurrentView('channels')) this.channelList.render(false);
     });
@@ -133,6 +136,8 @@ class App {
     const initialLoadingText = $('#loading-text');
     if (initialLoadingText) initialLoadingText.textContent = t('common.loading');
     initTheme();
+    // Styles that only make sense over the TV's hardware video plane.
+    if (isWebOS()) document.documentElement.classList.add('is-webos');
     this.views = {
       channels: $('#view-channels')!,
       player: $('#view-player')!,

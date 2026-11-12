@@ -6,7 +6,7 @@
 
 [data-focusable].focused {
   border-color: var(--focus-ring) !important;
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 12px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 3px var(--accent-glow);
   z-index: 10;
 }
 

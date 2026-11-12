@@ -1110,6 +1110,14 @@ export const StorageService = {
     set('header_playback', mode);
   },
 
+  /** Maximum lifts the TV's 1080p adaptive ceiling and starts streams high. */
+  getStreamQuality(): 'maximum' | 'standard' {
+    return get<unknown>('stream_quality', 'maximum') === 'standard' ? 'standard' : 'maximum';
+  },
+  setStreamQuality(mode: 'maximum' | 'standard'): void {
+    set('stream_quality', mode);
+  },
+
   /** Live shows channels as a card grid (default) or the compact list. */
   getLiveLayout(): 'grid' | 'list' {
     return get<unknown>('live_layout', 'grid') === 'list' ? 'list' : 'grid';

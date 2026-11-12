@@ -89,6 +89,8 @@ const {
       getAutoPlay: vi.fn(() => state.autoPlay),
       getLivePreview: vi.fn(() => state.livePreview),
       getLiveLayout: vi.fn((): 'grid' | 'list' => 'grid'),
+      getStreamQuality: vi.fn((): 'maximum' | 'standard' => 'maximum'),
+      setStreamQuality: vi.fn(),
       setLiveLayout: vi.fn(),
       getHideOnDemandInLive: vi.fn(() => true),
       setHideOnDemandInLive: vi.fn(),

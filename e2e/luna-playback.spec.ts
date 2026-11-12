@@ -306,6 +306,9 @@ test('a header channel plays through Luna and a channel switch releases its pipe
         appId: APP_ID,
         windowId: WINDOW_ID,
         transmission: { httpHeader: { referer: 'http://host/r', userAgent: 'Agent 1' } },
+        // Maximum stream quality: the panel's ceiling (FHD unless the TV
+        // reports UHD) and a high start, instead of UMS's low defaults.
+        adaptiveStreaming: { maxWidth: 1920, maxHeight: 1080, bps: { start: 8000000 } },
       },
     },
   });
