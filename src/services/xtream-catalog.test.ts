@@ -65,6 +65,8 @@ import {
   onCatalogListRefreshed,
   onCatalogListWritten,
   loadVodStreams,
+  catalogWarmupFor,
+  warmWholeCatalog,
 } from './xtream-catalog';
 import { getCachedCatalog, setCachedCatalog, setCachedCatalogState } from './idb-cache';
 import { CONFIG } from '../config';
@@ -117,6 +119,22 @@ describe('xtream-catalog', () => {
       out,
       CONFIG.XTREAM.DEFAULT_CATALOG_REFRESH_INTERVAL_MS,
     );
+  });
+
+  it('warms the whole catalogs Search has not cached, and only those', async () => {
+    cacheStore.set('x1|series_all', { key: 'x1|series_all', timestamp: Date.now(), data: [] });
+    clientMock.getVodStreams.mockResolvedValue([
+      { streamId: '10', name: 'Movie', poster: '', rating: '', categoryId: '1', containerExtension: 'mp4' },
+    ]);
+    const warming = warmWholeCatalog(account);
+    // Search can see the warm-up and wait for it instead of racing it.
+    expect(catalogWarmupFor('x1')).toBe(warming);
+    expect(catalogWarmupFor('x2')).toBeNull();
+    await warming;
+    expect(clientMock.getVodStreams).toHaveBeenCalled();
+    expect(clientMock.getSeries).not.toHaveBeenCalled();
+    expect(cacheStore.has('x1|vod_all')).toBe(true);
+    expect(catalogWarmupFor('x1')).toBeNull();
   });
 
   it('evaluates freshness against the configured catalog interval', async () => {

@@ -555,4 +555,5 @@ export const PT_BR_MESSAGES = {
   'settings.streamQualityMaximum': 'Máxima',
   'settings.streamQualityStandard': 'Padrão',
   'settings.streamQualityHint': 'Máxima reproduz os canais em até 4K em uma TV 4K e já começa com a melhor qualidade. Padrão usa os valores da TV: até 1080p, começando baixo.',
+  'search.loadingCatalog': 'Ainda carregando filmes e séries…',
 } satisfies MessageCatalog;

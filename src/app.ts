@@ -53,6 +53,7 @@ import { createLogger, installGlobalErrorHandlers, logEnvironment } from './util
 import { FocusRing } from './navigation/focus-ring';
 import { BootGuard, sourceFingerprint } from './services/boot-guard';
 import { TvCountry } from './services/tv-country';
+import { warmWholeCatalog } from './services/xtream-catalog';
 import { StreamQuality } from './services/stream-quality';
 import { isWebOS } from './utils/platform';
 import { Focus, type FocusScope } from './navigation/focus-scope';
@@ -112,6 +113,7 @@ class App {
   private epgRefreshIntervalMs: number | null | undefined;
   private epgChannelReloadTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly searchPrewarm = new SearchIndexPrewarmer(() => this.searchPrewarmSources());
+  private catalogWarmupTimer: ReturnType<typeof setTimeout> | null = null;
 
   async init(): Promise<void> {
     const done = log.time('init');
@@ -901,6 +903,17 @@ class App {
     }
   }
 
+  // Search's first open would otherwise download the whole Movies/Series
+  // catalog itself; fetch it once the app has settled instead.
+  private scheduleCatalogWarmup(): void {
+    if (this.catalogWarmupTimer !== null) clearTimeout(this.catalogWarmupTimer);
+    this.catalogWarmupTimer = setTimeout(() => {
+      this.catalogWarmupTimer = null;
+      const account = this.activeXtreamAccount();
+      if (account) void warmWholeCatalog(account);
+    }, CONFIG.XTREAM.CATALOG_WARMUP_DELAY_MS);
+  }
+
   private async loadData(forceEpgRefresh = false): Promise<void> {
     const done = log.time('loadData');
     this.loadingData = true;
@@ -985,6 +998,7 @@ class App {
 
       this.scanReminders();
       ReminderService.reschedulePending();
+      this.scheduleCatalogWarmup();
 
       if (StorageService.getAutoPlay()) {
         // The per-stream key survives customization and provider reshuffles.

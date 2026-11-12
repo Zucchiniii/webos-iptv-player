@@ -557,6 +557,7 @@ export const EN_MESSAGES = {
   'settings.streamQualityMaximum': 'Maximum',
   'settings.streamQualityStandard': 'Standard',
   'settings.streamQualityHint': 'Maximum plays channels up to 4K on a 4K TV and starts them at full quality. Standard uses the TV\'s defaults: up to 1080p, starting low.',
+  'search.loadingCatalog': 'Still loading movies and series…',
 } as const;
 
 export type MessageKey = keyof typeof EN_MESSAGES;

@@ -585,4 +585,5 @@ export const RU_MESSAGES = {
   'settings.streamQualityMaximum': 'Максимальное',
   'settings.streamQualityStandard': 'Стандартное',
   'settings.streamQualityHint': 'Максимальное: на 4K-телевизоре каналы идут до 4K и сразу в полном качестве. Стандартное: настройки телевизора — до 1080p и с низкого старта.',
+  'search.loadingCatalog': 'Фильмы и сериалы ещё загружаются…',
 } satisfies MessageCatalog;

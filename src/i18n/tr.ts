@@ -540,4 +540,5 @@ export const TR_MESSAGES = {
   'settings.streamQualityMaximum': 'En yüksek',
   'settings.streamQualityStandard': 'Standart',
   'settings.streamQualityHint': 'En yüksek, 4K TV’de kanalları 4K’ya kadar oynatır ve tam kaliteyle başlatır. Standart, TV’nin varsayılanlarını kullanır: 1080p’ye kadar, düşük başlangıç.',
+  'search.loadingCatalog': 'Filmler ve diziler hâlâ yükleniyor…',
 } as const satisfies MessageCatalog;

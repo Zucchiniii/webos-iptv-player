@@ -540,4 +540,5 @@ export const ZH_CN_MESSAGES = {
   'settings.streamQualityMaximum': '最高',
   'settings.streamQualityStandard': '标准',
   'settings.streamQualityHint': '最高：在 4K 电视上频道最高以 4K 播放，并以最佳画质起播。标准：使用电视默认设置，最高 1080p，起播画质较低。',
+  'search.loadingCatalog': '仍在加载电影和剧集…',
 } satisfies MessageCatalog;

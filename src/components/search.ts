@@ -4,6 +4,7 @@ import { Focus, type FocusScope } from '../navigation/focus-scope';
 import { html, raw } from '../utils/dom';
 import { channelLockBadge, seriesLockBadge, vodLockBadge } from './parental-badge';
 import { morph } from '../utils/morph';
+import { sizedArtwork } from '../utils/artwork';
 import { PlaylistService } from '../services/playlist-service';
 import { EpgService } from '../services/epg-service';
 import { ReminderService } from '../services/reminder-service';
@@ -12,6 +13,7 @@ import { XtreamArchiveService } from '../services/xtream-archive';
 import { persistSearchIndexes } from '../services/search-index-store';
 import {
   getSearchCatalogExpiresAt,
+  catalogWarmupFor,
   loadAllSeries,
   loadAllVodStreams,
   onCatalogListRefreshed,
@@ -515,6 +517,10 @@ export class Search {
   }
 
   private async fetchCatalog(account: PlaylistEntry, signal: AbortSignal): Promise<CatalogSources> {
+    // A background warm-up downloading the catalog now: let it finish and
+    // read its stored copy rather than racing it request for request.
+    const warming = catalogWarmupFor(account.id);
+    if (warming) await warming;
     const [vod, series] = await Promise.all([
       captureCatalogLoad(loadAllVodStreams(account, signal)),
       captureCatalogLoad(loadAllSeries(account, signal)),
@@ -674,17 +680,31 @@ export class Search {
     return 'persisted';
   }
 
+  // Each source joins the results as it lands: channels are searchable in a
+  // moment, while a cold Movies/Series catalog can take a provider a minute.
   private indexSettled(sessionId: number, ...sources: Array<keyof PendingIndex>): void {
     const pending = this.pendingIndex;
     if (!pending || sessionId !== this.workerSession) return;
     for (const source of sources) pending[source] = false;
-    if (pending.channels || pending.programmes || pending.catalog) return;
-    this.pendingIndex = null;
-    this.logIndexReady(this.indexMode());
-    if (!this.workerIndexLost) this.markWorkerIndexReady(this.account);
+    const done = !pending.channels && !pending.programmes && !pending.catalog;
+    if (done) {
+      this.pendingIndex = null;
+      this.logIndexReady(this.indexMode());
+      if (!this.workerIndexLost) this.markWorkerIndexReady(this.account);
+    }
     if (!this.active) return;
-    if (this.query.trim()) void this.startQuery(++this.queryGeneration);
-    else this.render();
+    if (pending.channels) return;
+    if (this.query.trim()) {
+      // A source joining results already on screen keeps where the user is.
+      void this.startQuery(++this.queryGeneration, this.hasResults());
+    } else if (done) {
+      this.render();
+    }
+  }
+
+  private hasResults(): boolean {
+    return this.visibleChannels.length > 0 || this.visiblePrograms.length > 0
+      || this.visibleMovies.length > 0 || this.visibleSeries.length > 0;
   }
 
   private onSelect(): void {
@@ -763,7 +783,7 @@ export class Search {
 
   private posterCell(name: string, poster: string): ReturnType<typeof html> {
     return poster
-      ? html`<img class="catalog-poster" src="${poster}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
+      ? html`<img class="catalog-poster" src="${sizedArtwork(poster, 'w342')}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'">`
       : html`<div class="catalog-poster catalog-poster-empty">${name.charAt(0)}</div>`;
   }
 
@@ -1117,8 +1137,9 @@ export class Search {
     const query = this.query;
     const sessionId = this.workerSession;
     if (!query.trim()) return;
-    if (this.pendingIndex) {
-      // The ready index runs this query; until then the hint stands in.
+    const pending = this.pendingIndex;
+    if (pending?.channels) {
+      // The channel index runs this query when it lands; until then the hint stands in.
       if (!this.indexStats.hintAt) this.indexStats.hintAt = Date.now();
       this.render();
       this.applyPendingFocus();
@@ -1143,7 +1164,8 @@ export class Search {
           sessionId,
           query,
           limit: this.resultLimit,
-          includeCatalog: !!this.account,
+          // A catalog still loading has no index yet; it re-runs this when it lands.
+          includeCatalog: !!this.account && !pending?.catalog,
         });
       }
     } catch (error) {
@@ -1580,12 +1602,13 @@ export class Search {
     // EPG programs use compact rows so their metadata remains readable.
     const resultsBody = !q
       ? html``
-      : this.pendingIndex
+      : this.pendingIndex?.channels
         ? html`<p class="catalog-hint search-empty">${t('search.preparing')}</p>`
-      : this.queryPending
+      : this.queryPending && !hasResults
         ? html``
         : !hasResults
-        ? html`<p class="catalog-hint search-empty">${t('search.empty')}</p>`
+        ? html`<p class="catalog-hint search-empty">${
+            this.pendingIndex ? t('search.preparing') : t('search.empty')}</p>`
         : isXtream
           ? html`
                 ${this.visibleChannels.length
@@ -1615,6 +1638,10 @@ export class Search {
                       this.seriesVirtualizer,
                       (s) => this.seriesTile(s),
                     )
+                  : ''}
+                ${this.pendingIndex?.catalog
+                  ? html`<p class="catalog-hint search-catalog-pending" data-key="catalog-pending">${
+                      t('search.loadingCatalog')}</p>`
                   : ''}
               `
           : html`

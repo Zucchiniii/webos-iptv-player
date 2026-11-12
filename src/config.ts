@@ -145,7 +145,12 @@ export const CONFIG = {
     DEFAULT_CATALOG_REFRESH_INTERVAL_MS: 6 * 60 * 60 * 1000,
     CATALOG_RETRY_DELAY_MS: 60 * 1000,
     CATALOG_LOAD_BUDGET_MS: 60 * 1000,
+    // Category lists fetched at once. A whole catalog is one request per
+    // category, so two at a time left a cold first Search waiting a minute.
     CATALOG_LOAD_CONCURRENCY: 2,
+    // After startup, download a catalog Search hasn't cached yet in the
+    // background, so the first Search finds Movies and Series ready.
+    CATALOG_WARMUP_DELAY_MS: 20 * 1000,
     ACCOUNT_MAX_BYTES: 1024 * 1024,      // account/server metadata response budget
     CATEGORY_MAX_BYTES: 2 * 1024 * 1024, // category-list response budget
     CATALOG_MAX_BYTES: 32 * 1024 * 1024, // full or per-category stream-list budget

@@ -645,11 +645,71 @@ async function fetchCatalogPartitions<T extends { categoryId: string }>(
   };
 }
 
+/**
+ * Downloads the whole Movies and Series catalogs Search needs when neither
+ * is cached yet. Runs once per account in the background after startup; the
+ * stored lists then feed the Search index prewarm, so the first Search opens
+ * with every source ready instead of waiting on hundreds of requests.
+ */
+let warmup: { accountId: string; promise: Promise<void> } | null = null;
+
+export function warmWholeCatalog(account: PlaylistEntry): Promise<void> {
+  if (warmup?.accountId === account.id) return warmup.promise;
+  const promise = runWarmup(account);
+  const current = { accountId: account.id, promise };
+  warmup = current;
+  const done = (): void => {
+    if (warmup === current) warmup = null;
+  };
+  promise.then(done, done);
+  return promise;
+}
+
+/** A warm-up in flight for the account (Search waits it out), or null. */
+export function catalogWarmupFor(accountId: string): Promise<void> | null {
+  return warmup?.accountId === accountId ? warmup.promise : null;
+}
+
+async function runWarmup(account: PlaylistEntry): Promise<void> {
+  const loads: Array<[string, () => Promise<unknown>]> = [
+    [`${account.id}|vod_all`, () => loadAllVodStreams(account)],
+    [`${account.id}|series_all`, () => loadAllSeries(account)],
+  ];
+  for (const [key, load] of loads) {
+    try {
+      // Search downloading it already, or a cached copy: nothing to warm.
+      if (activeWholeLoads.has(account.id) || await getCachedCatalog(key)) continue;
+      const started = Date.now();
+      await load();
+      log.info('Catalog warmed for Search', 'event=xtream.catalog.warmed',
+        `resource=${resourceFor(key)}`, `elapsedMs=${String(Date.now() - started)}`);
+    } catch (error) {
+      log.warn('Catalog warm-up failed', 'event=xtream.catalog.warm_failed',
+        `resource=${resourceFor(key)}`, error);
+    }
+  }
+}
+
+// Whole-catalog downloads running now, per account, so the background
+// warm-up never starts a second copy of one Search is already running.
+const activeWholeLoads = new Map<string, number>();
+
+function trackWholeLoad<T>(accountId: string, load: Promise<T>): Promise<T> {
+  activeWholeLoads.set(accountId, (activeWholeLoads.get(accountId) ?? 0) + 1);
+  const done = (): void => {
+    const left = (activeWholeLoads.get(accountId) ?? 1) - 1;
+    if (left > 0) activeWholeLoads.set(accountId, left);
+    else activeWholeLoads.delete(accountId);
+  };
+  load.then(done, done);
+  return load;
+}
+
 export function loadAllVodStreams(
   account: PlaylistEntry,
   signal?: AbortSignal,
 ): Promise<VodItem[]> {
-  return cachedList(
+  return trackWholeLoad(account.id, cachedList(
     `${account.id}|vod_all`,
     signal,
     (requestSignal, cached) => {
@@ -664,14 +724,14 @@ export function loadAllVodStreams(
         cached?.data,
       );
     },
-  );
+  ));
 }
 
 export function loadAllSeries(
   account: PlaylistEntry,
   signal?: AbortSignal,
 ): Promise<SeriesItem[]> {
-  return cachedList(
+  return trackWholeLoad(account.id, cachedList(
     `${account.id}|series_all`,
     signal,
     (requestSignal, cached) => {
@@ -686,5 +746,5 @@ export function loadAllSeries(
         cached?.data,
       );
     },
-  );
+  ));
 }

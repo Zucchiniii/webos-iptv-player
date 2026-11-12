@@ -555,4 +555,5 @@ export const FR_MESSAGES = {
   'settings.streamQualityMaximum': 'Maximale',
   'settings.streamQualityStandard': 'Standard',
   'settings.streamQualityHint': 'Maximale lit les chaînes jusqu’en 4K sur un téléviseur 4K et les démarre en pleine qualité. Standard utilise les réglages du téléviseur : jusqu’en 1080p, avec un démarrage bas.',
+  'search.loadingCatalog': 'Chargement des films et séries en cours…',
 } satisfies MessageCatalog;
