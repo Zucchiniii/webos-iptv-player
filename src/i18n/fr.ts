@@ -542,4 +542,13 @@ export const FR_MESSAGES = {
   'liveCategories.loadError': 'Impossible de charger les catégories.',
   'liveCategories.tryAgain': 'Réessayer',
   'liveCategories.settingsHint': 'Seules les catégories sélectionnées sont chargées. Moins il y en a, plus c’est rapide.',
+  'app.safeMode': 'L’app s’est fermée de façon inattendue la dernière fois : une liste de chaînes réduite a été chargée.',
+  'app.channelLimit': 'Les {count} premières chaînes ont été chargées. Choisissez moins de catégories pour voir les autres.',
+  'channel.allCountries': 'Tous les pays',
+  'settings.channelLayout': 'Affichage des chaînes',
+  'settings.channelLayoutGrid': 'Grille',
+  'settings.channelLayoutList': 'Liste',
+  'settings.channelLayoutHint': 'La grille affiche plus de chaînes à la fois avec le programme en cours. La liste est compacte.',
+  'settings.hideOnDemand': 'Masquer films et séries dans Direct',
+  'settings.hideOnDemandHint': 'Beaucoup de listes présentent chaque film et épisode comme une chaîne. Les masquer garde Direct rapide et stable sur la TV.',
 } satisfies MessageCatalog;

@@ -572,4 +572,13 @@ export const UK_MESSAGES = {
   'liveCategories.loadError': 'Не вдалося завантажити категорії.',
   'liveCategories.tryAgain': 'Повторити',
   'liveCategories.settingsHint': 'Завантажуються лише вибрані категорії. Що їх менше, то швидше завантаження.',
+  'app.safeMode': 'Минулого разу застосунок неочікувано закрився, тому завантажено скорочений список каналів.',
+  'app.channelLimit': 'Завантажено перші {count} каналів. Виберіть менше категорій, щоб побачити решту.',
+  'channel.allCountries': 'Усі країни',
+  'settings.channelLayout': 'Вигляд каналів',
+  'settings.channelLayoutGrid': 'Сітка',
+  'settings.channelLayoutList': 'Список',
+  'settings.channelLayoutHint': 'Сітка показує більше каналів одразу й що йде зараз. Список компактніший.',
+  'settings.hideOnDemand': 'Приховувати фільми й серіали в Ефірі',
+  'settings.hideOnDemandHint': 'Багато плейлистів подають кожен фільм і серію як канал. Якщо їх приховати, Ефір на телевізорі працює швидко й стабільно.',
 } satisfies MessageCatalog;

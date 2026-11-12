@@ -404,7 +404,7 @@ describe('XtreamClient VOD', () => {
     );
     expect(info).toEqual({
       plot: 'A plot', cast: 'Actor', director: 'Dir', genre: 'Drama',
-      releaseDate: '2020-01-01', durationSecs: 5400, poster: 'http://host/p.png', subtitles: [],
+      releaseDate: '2020-01-01', durationSecs: 5400, poster: 'http://host/p.png', backdrop: '', subtitles: [],
       imdbId: '', tmdbId: '', year: 2020,
     });
   });
@@ -687,6 +687,7 @@ describe('XtreamClient Series', () => {
       releaseDate: '',
       episodeRunTimeMins: 0,
       poster: '',
+      backdrop: '',
       rating: '',
       imdbId: '',
       tmdbId: '',
@@ -710,5 +711,16 @@ describe('XtreamClient Series', () => {
     expect(info!.episodesBySeason[1][0].subtitles).toEqual([
       { id: '1', name: 'Track 1', lang: 'l1', url: 'http://host/e.srt' },
     ]);
+  });
+});
+
+describe('firstBackdrop', () => {
+  it('reads an array, a URL, or a JSON-encoded array and skips non-URLs', async () => {
+    const { firstBackdrop } = await import('./xtream-client');
+    expect(firstBackdrop(['', 'http://host/b1.jpg', 'http://host/b2.jpg'])).toBe('http://host/b1.jpg');
+    expect(firstBackdrop('https://host/b.jpg')).toBe('https://host/b.jpg');
+    expect(firstBackdrop('["http://host/c.jpg"]')).toBe('http://host/c.jpg');
+    expect(firstBackdrop('javascript:alert(1)')).toBe('');
+    expect(firstBackdrop(undefined)).toBe('');
   });
 });

@@ -57,6 +57,11 @@ const {
         return index < 0;
       }),
       getShowHiddenChannels: () => false,
+      getLiveLayout: vi.fn((): 'grid' | 'list' => 'list'),
+      getLiveRegion: vi.fn((): string | null => null),
+      setLiveRegion: vi.fn(),
+      getLiveLocation: vi.fn((): { group: string; playlist: string } | null => null),
+      setLiveLocation: vi.fn(),
       getChannelCustomization: () => customization.record,
       setChannelCustomization: vi.fn((d: unknown) => { customization.record = d; }),
       clearChannelCustomization: vi.fn(() => { customization.record = null; }),
@@ -1277,5 +1282,122 @@ describe('ChannelList focus scope off the keys', () => {
     } finally {
       bar.dispose();
     }
+  });
+});
+
+describe('ChannelList card grid and countries', () => {
+  const GROUPS = ['SE | News', 'SE | Sport', 'UK | News', 'UK | Sport', 'DE | Kino'];
+  let original: Channel[];
+
+  beforeEach(() => {
+    original = data.raw.slice();
+    data.raw.splice(0, data.raw.length);
+    for (let i = 0; i < 10; i++) {
+      data.raw.push({
+        ...original[0],
+        id: `g${String(i)}`,
+        name: `Channel ${String(i)}`,
+        group: GROUPS[i % GROUPS.length],
+        url: `http://host/g${String(i)}`,
+      });
+    }
+    playlistMock.applyCustomization();
+    storageMock.getLiveLayout.mockReturnValue('grid');
+    storageMock.getLiveRegion.mockReturnValue('');
+    storageMock.setLiveRegion.mockClear();
+    list = new ChannelList(container, { onChannelSelect: onSelect });
+    Focus.setBase(() => list.focusScope);
+  });
+
+  afterEach(() => {
+    storageMock.getLiveLayout.mockReturnValue('list');
+    storageMock.getLiveRegion.mockReturnValue(null);
+    data.raw.splice(0, data.raw.length, ...original);
+    playlistMock.applyCustomization();
+  });
+
+  function focusedPosition(): string | undefined {
+    Focus.flush();
+    return container.querySelector<HTMLElement>('.channel-main .focused')?.dataset.listPosition;
+  }
+
+  it('lays channels out as cards four to a row under a focus header', () => {
+    list.render();
+    expect(container.querySelectorAll('.channel-card')).toHaveLength(10);
+    expect(container.querySelector('.channel-hero .channel-hero-name')?.textContent).toBe('Channel 0');
+    // Three rows of the 144px stride.
+    expect(container.querySelector<HTMLElement>('.channel-list-spacer')?.style.height).toBe('432px');
+  });
+
+  it('moves a row with Up and Down and a card with Left and Right', () => {
+    list.render();
+    list.handleAction('down');
+    expect(focusedPosition()).toBe('4');
+    list.handleAction('right');
+    expect(focusedPosition()).toBe('5');
+    expect(container.querySelector('.channel-hero .channel-hero-name')?.textContent).toBe('Channel 5');
+    list.handleAction('up');
+    expect(focusedPosition()).toBe('1');
+    // The first row hands Up to the tab bar.
+    expect(list.handleAction('up')).toBe(false);
+  });
+
+  it('leaves the grid for the groups only from its first column', () => {
+    list.render();
+    list.handleAction('right');
+    list.handleAction('left');
+    expect(focusedPosition()).toBe('0');
+    list.handleAction('left');
+    Focus.flush();
+    expect(container.querySelector('.group-item.focused')?.getAttribute('data-group')).toBe('builtin:all');
+  });
+
+  it('steps down from a full row onto a shorter last row', () => {
+    list.render();
+    list.handleAction('down');
+    list.handleAction('right');
+    list.handleAction('right');
+    list.handleAction('right');
+    expect(focusedPosition()).toBe('7');
+    list.handleAction('down');
+    expect(focusedPosition()).toBe('9');
+  });
+
+  it('narrows All and the groups to a chosen country and remembers it', () => {
+    list.render();
+    const chips = Array.from(container.querySelectorAll<HTMLElement>('.region-chip'))
+      .map(chip => chip.dataset.region);
+    expect(chips).toEqual(['', 'GB', 'SE', 'DE']);
+    // From the grid: Left to the groups, Up to the chips, Right twice to SE.
+    list.handleAction('left');
+    list.handleAction('up');
+    list.handleAction('right');
+    list.handleAction('right');
+    list.handleAction('select');
+    expect(storageMock.setLiveRegion).toHaveBeenCalledWith('SE');
+    expect(Array.from(container.querySelectorAll('.channel-card .channel-name'))
+      .map(name => name.textContent)).toEqual(['Channel 0', 'Channel 1', 'Channel 5', 'Channel 6']);
+    expect(Array.from(container.querySelectorAll('.group-item .group-name'))
+      .map(name => name.textContent)).toEqual(['All', 'Favorites', 'Recently Watched', 'News', 'Sport']);
+  });
+
+  it('keeps the list while editing', () => {
+    list.render();
+    list.enterEditMode();
+    expect(container.querySelector('.channel-card')).toBeNull();
+    expect(container.querySelector('.channel-hero')).toBeNull();
+  });
+
+  it('arranges every country while editing, then restores the chosen one', () => {
+    storageMock.getLiveRegion.mockReturnValue('SE');
+    list = new ChannelList(container, { onChannelSelect: onSelect });
+    Focus.setBase(() => list.focusScope);
+    list.render();
+    expect(container.querySelectorAll('.channel-main .channel-item')).toHaveLength(4);
+    list.enterEditMode();
+    expect(container.querySelectorAll('.channel-main .channel-item')).toHaveLength(10);
+    expect(container.querySelector('.region-chips')).toBeNull();
+    list.exitEditMode();
+    expect(container.querySelectorAll('.channel-main .channel-item')).toHaveLength(4);
   });
 });

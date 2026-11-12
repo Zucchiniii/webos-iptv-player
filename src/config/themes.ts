@@ -8,10 +8,11 @@ export interface ThemeMeta {
   isLight: boolean;
 }
 
-export const DEFAULT_THEME = 'midnight';
+export const DEFAULT_THEME = 'noir';
 
 // Display order in the picker.
 export const THEMES: ThemeMeta[] = [
+  { id: 'noir', name: 'Noir', isLight: false },
   { id: 'midnight', name: 'Midnight', isLight: false },
   { id: 'ember', name: 'Ember', isLight: false },
   { id: 'emerald', name: 'Emerald', isLight: false },

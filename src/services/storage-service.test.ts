@@ -316,6 +316,39 @@ describe('StorageService', () => {
     expect(StorageService.getPlaylists()[0].id).toBe(got[0].id);
   });
 
+  it('saves a pasted get.php playlist URL as an Xtream account under the same id', () => {
+    StorageService.setPlaylists([{
+      id: 'x1',
+      name: 'Mine',
+      url: 'http://host:8080/get.php?username=u1&password=p1&type=m3u_plus&output=ts',
+      source: 'url',
+    }]);
+    expect(StorageService.getPlaylists()).toEqual([{
+      id: 'x1',
+      name: 'Mine',
+      url: 'http://host:8080',
+      source: 'xtream',
+      xtream: { username: 'u1', password: 'p1', liveOutput: 'ts' },
+    }]);
+  });
+
+  it('upgrades a stored get.php playlist URL on read and keeps other URLs', () => {
+    StorageService.set('playlists', [
+      { id: 'x1', name: 'A', url: 'http://host/get.php?username=u&password=p' },
+      { id: 'm1', name: 'B', url: 'http://host/list.m3u', source: 'url' },
+    ]);
+    const [account, plain] = StorageService.getPlaylists();
+    expect(account).toMatchObject({ id: 'x1', source: 'xtream', url: 'http://host' });
+    expect(plain).toEqual({ id: 'm1', name: 'B', url: 'http://host/list.m3u', source: 'url' });
+    expect(StorageService.get('playlists', [] as { source?: string }[])[0].source).toBe('xtream');
+  });
+
+  it('hides on-demand entries from Live by default', () => {
+    expect(StorageService.getHideOnDemandInLive()).toBe(true);
+    StorageService.setHideOnDemandInLive(false);
+    expect(StorageService.getHideOnDemandInLive()).toBe(false);
+  });
+
   it('invalidates the channel cache and probed stream MIMEs when playlist configuration changes', async () => {
     StorageService.set('cached_playlist', { legacy: true });
     await setCachedStreamMime('http://host/live', 'video/mp2t');
@@ -379,8 +412,8 @@ describe('StorageService', () => {
     expect(StorageService.getEpgOffsets()).toEqual({});
   });
 
-  it('defaults the theme to midnight and round-trips a selection', () => {
-    expect(StorageService.getTheme()).toBe('midnight');
+  it('defaults the theme to noir and round-trips a selection', () => {
+    expect(StorageService.getTheme()).toBe('noir');
     StorageService.setTheme('arctic');
     expect(StorageService.getTheme()).toBe('arctic');
   });

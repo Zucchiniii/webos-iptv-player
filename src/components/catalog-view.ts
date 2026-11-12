@@ -67,7 +67,7 @@ const CATEGORY_RAIL_VIEWPORT = 1760;
 const RAIL_PLACEHOLDER_TILES = 8;
 
 // Matches the rail track's padding and its end spacer in catalog-view.css.
-const RAIL_EDGE_GUTTER = 12;
+const RAIL_EDGE_GUTTER = 16;
 
 export interface CatalogHandlers {
   onRevealTabBar: () => void;
@@ -143,7 +143,13 @@ function isScroller(overflow: string): boolean {
 // positions, and focused tile exactly as they were.
 // Subclasses supply the catalog loaders, item accessors, and the detail
 // rendering / playback specifics.
+// Inline, so the rating star never depends on the TV font's symbol coverage.
+const STAR_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z" fill="currentColor"/></svg>';
+
 export abstract class CatalogView<C extends { id: string; name: string }, I extends CatalogSortItem> {
+  // The title the hero currently shows, so a re-render can put its meta back.
+  private heroItem: I | null = null;
+
   protected nav: SpatialNav;
   protected account: PlaylistEntry | null = null;
   protected mode: Mode = 'browse';
@@ -1169,13 +1175,13 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
   private heroFromTile(el: HTMLElement): void {
     if (el.dataset.resumeEpisode !== undefined) {
       const entry = this.resume.find(entry => entry.itemId === el.dataset.resumeEpisode);
-      if (entry) this.updateHero(entry.name, entry.poster);
+      if (entry) this.updateHero(entry.name, entry.poster, null);
       return;
     }
     const id = el.dataset.itemId;
     if (id === undefined) return;
     const item = this.findItem(el.dataset.categoryId ?? '', id);
-    if (item) this.updateHero(this.itemName(item), this.itemPoster(item));
+    if (item) this.updateHero(this.itemName(item), this.itemPoster(item), item);
   }
 
   // A tile flush with the rail's scrollport would clip its focus ring; keep a
@@ -1206,11 +1212,14 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
     return true;
   }
 
-  private updateHero(name: string, poster: string): void {
+  private updateHero(name: string, poster: string, item: I | null): void {
     const hero = this.layers.browse.querySelector<HTMLElement>('.catalog-hero');
     if (!hero) return;
     const title = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-title');
     if (title) title.textContent = name; // textContent escapes untrusted names
+    this.heroItem = item;
+    const meta = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-meta');
+    if (meta) morph(meta, this.heroMeta(item));
     // Poster sits inside a CSS url('…') string; percent-encode the characters
     // that could break out of it (matches renderBrowse's heroBg).
     const bg = poster ? poster.replace(/["'()\\\s]/g, encodeURIComponent) : '';
@@ -1572,20 +1581,46 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
 
   // The hero a focused title put up in place of the leading one, which a
   // rail landing re-render keeps whatever the focus rests on.
-  private pickedHero(): { name: string; background: string } | null {
+  private pickedHero(): { name: string; background: string; item: I | null } | null {
     const hero = this.layers.browse.querySelector<HTMLElement>('.catalog-hero');
     const name = this.layers.browse.querySelector('.catalog-hero-title')?.textContent ?? '';
     if (!hero) return null;
     const leading = this.leadingHero();
     if (name === (leading ? this.itemName(leading) : this.kicker)) return null;
-    return { name, background: hero.style.backgroundImage };
+    return { name, background: hero.style.backgroundImage, item: this.heroItem };
   }
 
-  private restoreHero(picked: { name: string; background: string }): void {
+  private restoreHero(picked: { name: string; background: string; item: I | null }): void {
     const hero = this.layers.browse.querySelector<HTMLElement>('.catalog-hero');
     const title = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-title');
+    const meta = this.layers.browse.querySelector<HTMLElement>('.catalog-hero-meta');
     if (hero) hero.style.backgroundImage = picked.background;
     if (title) title.textContent = picked.name;
+    this.heroItem = picked.item;
+    if (meta) morph(meta, this.heroMeta(picked.item));
+  }
+
+  // Wide artwork behind a detail page; the poster stands in when the panel
+  // sends none. Percent-encoded like the hero for the CSS url() string.
+  protected detailBackdrop(url: string): Safe {
+    const bg = url.replace(/["'()\\\s]/g, encodeURIComponent);
+    return bg
+      ? html`<div class="detail-backdrop" style="background-image: url('${bg}')"></div>`
+      : html``;
+  }
+
+  // Rating and year under the hero title, the at-a-glance facts a poster
+  // can't carry. Absent values drop out instead of showing a placeholder.
+  private heroMeta(item: I | null): Safe {
+    if (!item) return html``;
+    const rating = Number.parseFloat(item.rating);
+    const showRating = Number.isFinite(rating) && rating > 0;
+    return html`
+      ${showRating ? html`<span class="catalog-hero-chip catalog-hero-rating">${raw(STAR_ICON)}<span>${
+        (Math.round(rating * 10) / 10).toFixed(1)}</span></span>` : ''}
+      ${item.year ? html`<span class="catalog-hero-chip">${String(item.year)}</span>` : ''}
+      <span class="catalog-hero-chip catalog-hero-kind">${this.kicker}</span>
+    `;
   }
 
   // Renders browse holding what is on screen still while a rail above it
@@ -1705,6 +1740,7 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
     // entity encoding is decoded before CSS parses it; percent-encode the
     // characters that could break out of the string.
     const heroBg = hero ? this.itemPoster(hero).replace(/["'()\\\s]/g, encodeURIComponent) : '';
+    this.heroItem = hero;
     // Once some categories have no rail, "All Categories" lists every category,
     // rails included, so it is the one complete index of the catalog.
     const moreCats = this.allCategoriesShown() ? this.categories : [];
@@ -1727,6 +1763,7 @@ export abstract class CatalogView<C extends { id: string; name: string }, I exte
             <div class="catalog-hero-body">
               <div class="catalog-hero-kicker">${this.kicker}</div>
               <h1 class="catalog-hero-title">${hero ? this.itemName(hero) : this.kicker}</h1>
+              <div class="catalog-hero-meta">${this.heroMeta(hero)}</div>
             </div>
             <div class="catalog-rails">
               <div class="catalog-rails-spacer"></div>

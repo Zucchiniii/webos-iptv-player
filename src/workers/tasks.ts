@@ -15,6 +15,10 @@ export interface M3UWorkerRequest {
   xtreamLive?: XtreamLiveReference[];
   xtreamBaseUrl?: string;
   xtreamGroupFilter?: XtreamGroupNameFilter;
+  /** Drop movie and episode entries a plain or unfiltered list mixes into Live. */
+  dropOnDemand?: boolean;
+  /** Stop keeping channels past this count (0 = unlimited). */
+  maxChannels?: number;
 }
 
 export interface M3UWorkerResponse {

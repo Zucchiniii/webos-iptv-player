@@ -65,6 +65,11 @@ const { data, customization, playlistMock, epgMock, storageMock, recentMock, toa
         return index < 0;
       }),
       getShowHiddenChannels: () => false,
+      getLiveLayout: vi.fn((): 'grid' | 'list' => 'list'),
+      getLiveRegion: vi.fn((): string | null => null),
+      setLiveRegion: vi.fn(),
+      getLiveLocation: vi.fn((): { group: string; playlist: string } | null => null),
+      setLiveLocation: vi.fn(),
       getChannelCustomization: () => customization.record,
       setChannelCustomization: vi.fn((d: unknown) => { customization.record = d; }),
       clearChannelCustomization: vi.fn(() => { customization.record = null; }),

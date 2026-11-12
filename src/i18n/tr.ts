@@ -527,4 +527,13 @@ export const TR_MESSAGES = {
   'liveCategories.loadError': 'Kategoriler yüklenemedi.',
   'liveCategories.tryAgain': 'Tekrar dene',
   'liveCategories.settingsHint': 'Yalnızca seçtiğiniz kategoriler yüklenir. Daha az kategori daha hızlı yüklenir.',
+  'app.safeMode': 'Uygulama geçen sefer beklenmedik şekilde kapandı, bu yüzden daha küçük bir kanal listesi yüklendi.',
+  'app.channelLimit': 'İlk {count} kanal yüklendi. Diğerlerini görmek için daha az kategori seçin.',
+  'channel.allCountries': 'Tüm ülkeler',
+  'settings.channelLayout': 'Kanal düzeni',
+  'settings.channelLayoutGrid': 'Izgara',
+  'settings.channelLayoutList': 'Liste',
+  'settings.channelLayoutHint': 'Izgara, şu an yayında olanla birlikte aynı anda daha fazla kanal gösterir. Liste daha sadedir.',
+  'settings.hideOnDemand': 'Canlı’da film ve dizileri gizle',
+  'settings.hideOnDemandHint': 'Birçok liste her filmi ve bölümü kanal olarak verir. Gizlemek Canlı’yı TV’de hızlı ve kararlı tutar.',
 } as const satisfies MessageCatalog;

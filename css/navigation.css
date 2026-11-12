@@ -6,19 +6,34 @@
 
 [data-focusable].focused {
   border-color: var(--focus-ring) !important;
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 0 20px var(--accent-glow);
+  box-shadow: 0 0 0 3px var(--accent-glow), 0 12px 32px rgba(0, 0, 0, 0.35);
   z-index: 10;
 }
 
-.group-item.focused,
 .channel-item.focused {
-  background: var(--bg-tertiary) !important;
+  background: rgb(var(--fg-rgb) / 0.1) !important;
   border-color: var(--focus-ring) !important;
 }
 
+/* Groups are a menu: focus inverts the row like the section pill. */
+.group-item.focused {
+  background: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
+}
+
+.group-item.focused .group-name,
+.group-item.focused .group-count {
+  color: var(--bg-primary);
+}
+
 .btn.focused {
+  background: rgb(var(--fg-rgb) / 0.16);
+  border-color: var(--focus-ring);
+  color: var(--text-primary);
+}
+
+.btn-primary.focused {
   background: var(--accent-dim);
-  border-color: var(--accent);
   color: white;
 }
 
@@ -33,8 +48,8 @@
 }
 
 .settings-input.focused {
-  border-color: var(--accent) !important;
-  background: var(--bg-primary);
+  border-color: var(--focus-ring) !important;
+  background: rgb(var(--fg-rgb) / 0.1);
 }
 
 .epg-programme.focused {

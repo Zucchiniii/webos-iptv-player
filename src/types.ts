@@ -547,6 +547,8 @@ export interface VodInfo {
   releaseDate: string;
   durationSecs: number;
   poster: string;
+  /** Wide artwork for the detail backdrop; empty when the panel has none. */
+  backdrop?: string;
   subtitles: SidecarSubtitle[];
   imdbId: string;
   tmdbId: string;
@@ -589,6 +591,7 @@ export interface SeriesInfo {
   releaseDate: string;
   episodeRunTimeMins: number;
   poster: string;
+  backdrop?: string;
   rating: string;
   imdbId: string;
   tmdbId: string;

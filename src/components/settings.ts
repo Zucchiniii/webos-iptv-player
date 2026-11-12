@@ -733,6 +733,8 @@ export class Settings {
     this.epgOffsets = { ...this.storedEpgOffsets };
     const epgSources = this.epgSources(manualEpgSources, allPlaylists);
     const autoPlay = StorageService.getAutoPlay();
+    const liveLayout = StorageService.getLiveLayout();
+    const hideOnDemand = StorageService.getHideOnDemandInLive();
     const livePreview = StorageService.getLivePreview();
     const channelCycleMode = StorageService.getChannelCycleMode();
     const showHidden = StorageService.getShowHiddenChannels();
@@ -894,6 +896,11 @@ export class Settings {
                   ${toggleGroup('show-hidden', [{ value: 'on', label: t('settings.on') }, { value: 'off', label: t('settings.off') }], showHidden ? 'on' : 'off')}
                   <div class="settings-item-hint">${t('settings.showHiddenHint')}</div>
                 </div>
+                <div class="settings-item">
+                  <div class="settings-item-title">${t('settings.hideOnDemand')}</div>
+                  ${toggleGroup('hide-on-demand', [{ value: 'on', label: t('settings.on') }, { value: 'off', label: t('settings.off') }], hideOnDemand ? 'on' : 'off')}
+                  <div class="settings-item-hint">${t('settings.hideOnDemandHint')}</div>
+                </div>
                 <div class="settings-item settings-item--action">
                   <div class="settings-item-title">${t('settings.resetCustomization')}</div>
                   <button class="btn btn-danger" data-focusable id="reset-customization"
@@ -968,6 +975,14 @@ export class Settings {
                 <div class="settings-item">
                   <div class="settings-item-title">${t('settings.textSize')}</div>
                   ${dropdown('text-size', textSizes, textSize)}
+                </div>
+                <div class="settings-item">
+                  <div class="settings-item-title">${t('settings.channelLayout')}</div>
+                  ${toggleGroup('live-layout', [
+                    { value: 'grid', label: t('settings.channelLayoutGrid') },
+                    { value: 'list', label: t('settings.channelLayoutList') },
+                  ], liveLayout)}
+                  <div class="settings-item-hint">${t('settings.channelLayoutHint')}</div>
                 </div>
               </div>
             </div>
@@ -2861,6 +2876,17 @@ export class Settings {
     const livePreviewBtn = $('#live-preview-setting .toggle-option.active', this.container);
     if (livePreviewBtn) StorageService.setLivePreview(livePreviewBtn.dataset.value === 'on');
 
+    const liveLayoutBtn = $('#live-layout .toggle-option.active', this.container);
+    if (liveLayoutBtn?.dataset.value === 'grid' || liveLayoutBtn?.dataset.value === 'list') {
+      StorageService.setLiveLayout(liveLayoutBtn.dataset.value);
+    }
+
+    // Which entries count as channels changes the list itself, so it reloads.
+    const hideOnDemandBtn = $('#hide-on-demand .toggle-option.active', this.container);
+    const hideOnDemandBefore = StorageService.getHideOnDemandInLive();
+    const hideOnDemandAfter = hideOnDemandBtn ? hideOnDemandBtn.dataset.value === 'on' : hideOnDemandBefore;
+    if (hideOnDemandAfter !== hideOnDemandBefore) StorageService.setHideOnDemandInLive(hideOnDemandAfter);
+
     const channelCycleBtn = $('#channel-cycle-mode .toggle-option.active', this.container);
     if (channelCycleBtn?.dataset.value) {
       StorageService.setChannelCycleMode(channelCycleBtn.dataset.value as ChannelCycleMode);
@@ -2996,7 +3022,8 @@ export class Settings {
       ]));
     const offsetSig = (offsets: Record<string, number>) =>
       JSON.stringify(Object.keys(offsets).sort().map(url => [url, offsets[url]]));
-    const dataChanged = JSON.stringify(manualEpgSources)
+    const dataChanged = hideOnDemandAfter !== hideOnDemandBefore
+      || JSON.stringify(manualEpgSources)
         !== JSON.stringify(previousManualEpgSources)
       || sig(stored) !== sig(nextSources)
       || offsetSig(this.storedEpgOffsets) !== offsetSig(this.epgOffsets);

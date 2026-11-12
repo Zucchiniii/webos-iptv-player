@@ -544,6 +544,15 @@ export const EN_MESSAGES = {
   'liveCategories.loadError': 'Couldn\'t load categories.',
   'liveCategories.tryAgain': 'Try again',
   'liveCategories.settingsHint': 'Load only the categories you select. Fewer categories load faster.',
+  'app.safeMode': 'The app closed unexpectedly last time, so a smaller channel list was loaded.',
+  'app.channelLimit': 'Loaded the first {count} channels. Choose fewer categories to see the rest.',
+  'channel.allCountries': 'All countries',
+  'settings.channelLayout': 'Channel layout',
+  'settings.channelLayoutGrid': 'Grid',
+  'settings.channelLayoutList': 'List',
+  'settings.channelLayoutHint': 'Grid shows more channels at once with what\'s on now. List is compact.',
+  'settings.hideOnDemand': 'Hide movies and series in Live',
+  'settings.hideOnDemandHint': 'Many playlists list every movie and episode as a channel. Hiding them keeps Live fast and stable on the TV.',
 } as const;
 
 export type MessageKey = keyof typeof EN_MESSAGES;

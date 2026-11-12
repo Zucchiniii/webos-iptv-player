@@ -88,6 +88,10 @@ const {
       }))),
       getAutoPlay: vi.fn(() => state.autoPlay),
       getLivePreview: vi.fn(() => state.livePreview),
+      getLiveLayout: vi.fn((): 'grid' | 'list' => 'grid'),
+      setLiveLayout: vi.fn(),
+      getHideOnDemandInLive: vi.fn(() => true),
+      setHideOnDemandInLive: vi.fn(),
       getAnimationMode: vi.fn(() => state.animationMode),
       getTheme: vi.fn(() => state.theme),
       getOverlayStyle: vi.fn(() => state.overlayStyle),
@@ -975,7 +979,7 @@ describe('Settings theme picker', () => {
   beforeEach(() => settings.render());
 
   it('renders a swatch per registered theme with the saved theme active', () => {
-    expect(container.querySelectorAll('.theme-swatch')).toHaveLength(15);
+    expect(container.querySelectorAll('.theme-swatch')).toHaveLength(16);
     expect(container.querySelector('.theme-swatch.active')!.getAttribute('data-theme-id')).toBe('midnight');
   });
 

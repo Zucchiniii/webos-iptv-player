@@ -332,6 +332,7 @@ export class Series extends CatalogView<SeriesCategory, SeriesItem> {
 
     morph(this.layer('detail'), html`
       <div class="catalog-view series-detail" data-nav-container>
+        ${this.detailBackdrop(info?.backdrop || poster)}
         <div class="series-detail-head">
           <div class="detail-poster-wrap series-detail-poster">${this.posterCell(series.name, poster)}</div>
           <div class="detail-body">

@@ -45,14 +45,15 @@
 
 .player-osd {
   position: absolute;
-  bottom: 20px;
-  left: 40px;
-  right: 40px;
-  background: rgba(30, 30, 50, 0.75);
-  border-radius: 12px;
-  padding: 16px 32px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
+  bottom: 36px;
+  left: 56px;
+  right: 56px;
+  background: rgba(14, 15, 19, 0.8);
+  border-radius: 28px;
+  padding: 26px 40px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(24px) saturate(1.4);
   z-index: 60;
 }
 
@@ -65,15 +66,16 @@
 .subs-offset-card,
 .number-entry,
 .live-preview-message {
-  --text-primary: #e8e8e8;
-  --text-secondary: #a0a0b0;
-  --text-muted: #666680;
-  --scrollbar-thumb: #666680;
-  --bg-secondary: #12121a;
-  --bg-tertiary: #1a1a2e;
-  --border: #2a2a3e;
-  --overlay-divider: rgba(255, 255, 255, 0.25);
-  --overlay-chip: rgba(255, 255, 255, 0.14);
+  --text-primary: #f4f4f6;
+  --text-secondary: #a3a4ad;
+  --text-muted: #6c6d78;
+  --scrollbar-thumb: #4a4b55;
+  --bg-primary: #07080a;
+  --bg-secondary: #0f1013;
+  --bg-tertiary: #18191e;
+  --border: #23242b;
+  --overlay-divider: rgba(255, 255, 255, 0.18);
+  --overlay-chip: rgba(255, 255, 255, 0.12);
   color: var(--text-primary);
 }
 
@@ -93,6 +95,7 @@
   --text-secondary: #4a5160;
   --text-muted: #79808f;
   --scrollbar-thumb: #a8aeb8;
+  --bg-primary: #f4f6f9;
   --bg-secondary: #eceef2;
   --bg-tertiary: #dfe4ea;
   --border: #cfd5dd;
@@ -109,22 +112,27 @@
 }
 
 .osd-channel-number {
-  font-size: 42px;
-  font-weight: 700;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
   color: var(--accent);
   min-width: 60px;
 }
 
 .osd-channel-logo {
-  width: 48px;
-  height: 48px;
+  width: 56px;
+  height: 56px;
+  padding: 6px;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .osd-channel-name {
   font-size: 36px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 .osd-stream-info {
@@ -237,7 +245,7 @@
 
 .osd-progress {
   height: 6px;
-  background: var(--bg-tertiary);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: 3px;
   overflow: hidden;
   flex: 1;
@@ -245,7 +253,7 @@
 
 .osd-progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-dim));
+  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
   border-radius: 3px;
   transition: width 1s linear;
 }
@@ -273,8 +281,8 @@
   height: 18px;
   transform: translateY(-50%);
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(var(--accent-rgb) / 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 /* Live DVR (timeshift) row: play/pause + "behind live" offset + Go-to-Live. The
@@ -436,21 +444,24 @@
 }
 
 /* Player sidebar overlay (Magic Remote / left key) */
+/* A floating glass panel inset from the screen edge. */
 .player-sidebar {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 20px;
+  left: 20px;
   width: fit-content;
-  height: 1080px;
-  background: rgba(10, 10, 15, 0.92);
-  backdrop-filter: blur(12px);
+  height: 1040px;
+  background: rgba(12, 13, 17, 0.9);
+  backdrop-filter: blur(24px) saturate(1.4);
   z-index: 70;
   display: flex;
   flex-direction: row;
   overflow: hidden;
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
-  border-right: 1px solid var(--border);
+  transform: translateX(calc(-100% - 40px));
+  transition: transform 0.28s var(--ease-out);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
 }
 
 .player-sidebar.hidden {
@@ -504,11 +515,12 @@
 }
 
 .player-sidebar .sidebar-title {
-  padding: 20px 24px;
+  padding: 22px 24px;
   font-size: 24px;
-  font-weight: 600;
-  color: var(--accent);
-  border-bottom: 1px solid var(--border);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .player-sidebar .sidebar-channel-title {
@@ -518,9 +530,9 @@
   gap: 12px;
   font-family: inherit;
   text-align: left;
-  background: rgb(var(--accent-rgb) / 0.06);
+  background: transparent;
   border: 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   cursor: pointer;
   transition: background 160ms ease;
 }
@@ -602,18 +614,13 @@
 }
 
 .player-sidebar .sidebar-group-item.active {
-  background: rgb(var(--accent-rgb) / 0.1);
-  border-color: var(--accent-dim);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.player-sidebar .sidebar-group-item.focused {
-  border-color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.12);
-}
-
+.player-sidebar .sidebar-group-item.focused,
 .player-sidebar .sidebar-group-item.active.focused {
-  border-color: var(--accent);
-  background: rgb(var(--accent-rgb) / 0.2);
+  border-color: var(--focus-ring);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .player-sidebar .sidebar-group-icon {
@@ -681,40 +688,42 @@
 
 .player-sidebar .sidebar-tabs {
   display: flex;
-  gap: 4px;
-  padding: 8px 8px 0;
-  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  padding: 10px 16px 12px;
+  border-bottom: 1px solid var(--overlay-chip);
   flex-shrink: 0;
   overflow-x: auto;
 }
 
+/* Source pills, styled like the Live view's so focus reads the same. */
 .player-sidebar .sidebar-tab {
-  padding: 8px 14px;
+  padding: 7px 16px;
   font-size: 16px;
+  font-weight: 600;
   color: var(--text-secondary);
-  border-bottom: 2px solid transparent;
+  border: 2px solid transparent;
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
   flex-shrink: 0;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-chip);
 }
 
 .player-sidebar .sidebar-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: var(--overlay-divider);
 }
 
 .player-sidebar .sidebar-tab:hover {
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
 }
 
 .player-sidebar .sidebar-tab.focused {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: rgb(var(--accent-rgb) / 0.16);
-  box-shadow: inset 0 0 0 2px var(--accent);
+  color: var(--bg-primary);
+  border-color: transparent;
+  background: var(--text-primary);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
 }
 
 .player-sidebar .sidebar-channel-list {
@@ -740,7 +749,7 @@
   display: flex;
   align-items: center;
   padding: 12px 20px;
-  border-radius: var(--radius);
+  border-radius: 18px;
   border: 2px solid transparent;
   cursor: pointer;
   transition: var(--transition);
@@ -750,18 +759,13 @@
 }
 
 .player-sidebar .sidebar-ch-item.playing {
-  background: rgb(var(--accent-rgb) / 0.1);
-  border-color: var(--accent-dim);
+  background: rgb(var(--accent-rgb) / 0.16);
 }
 
-.player-sidebar .sidebar-ch-item.focused {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: var(--text-primary);
-}
-
+.player-sidebar .sidebar-ch-item.focused,
 .player-sidebar .sidebar-ch-item.playing.focused {
-  background: rgb(var(--accent-rgb) / 0.2);
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--focus-ring);
 }
 
 .player-sidebar .sidebar-ch-item .ch-num {
@@ -773,26 +777,27 @@
 }
 
 .player-sidebar .sidebar-ch-item .ch-logo-wrap {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
 }
 
 .player-sidebar .sidebar-ch-item .ch-logo {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
-  border-radius: 4px;
 }
 
 .player-sidebar .sidebar-ch-item .ch-logo-placeholder {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  background: var(--bg-tertiary);
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, rgb(var(--accent-rgb) / 0.32), rgba(255, 255, 255, 0.04));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -855,21 +860,23 @@
 /* Player right menu (Magic Remote / right key) */
 .player-menu {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 20px;
+  right: 20px;
   width: fit-content;
-  min-width: 340px;
-  max-width: 440px;
-  height: 1080px;
-  background: rgba(10, 10, 15, 0.92);
-  backdrop-filter: blur(12px);
+  min-width: 360px;
+  max-width: 460px;
+  height: 1040px;
+  background: rgba(12, 13, 17, 0.9);
+  backdrop-filter: blur(24px) saturate(1.4);
   z-index: 70;
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  transform: translateX(100%);
-  transition: transform 0.25s ease;
-  border-left: 1px solid var(--border);
+  padding: 32px 28px;
+  transform: translateX(calc(100% + 40px));
+  transition: transform 0.28s var(--ease-out);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
 }
 
 .player-menu.visible {
@@ -881,8 +888,10 @@
 }
 
 .player-menu .menu-header h2 {
-  font-size: 28px;
-  color: var(--accent);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
 }
 
 .player-menu .menu-header .menu-subtitle {
@@ -907,7 +916,7 @@
   align-items: center;
   gap: 14px;
   padding: 16px 18px;
-  border-radius: var(--radius);
+  border-radius: 18px;
   border: 2px solid transparent;
   font-size: 22px;
   color: var(--text-primary);
@@ -917,8 +926,8 @@
 }
 
 .player-menu .menu-item.focused {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--focus-ring);
 }
 
 .player-menu .menu-item:hover {

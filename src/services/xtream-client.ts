@@ -130,6 +130,25 @@ function catalogSortMetadata(item: Record<string, unknown>, series = false): {
   };
 }
 
+/** The first http(s) URL of a `backdrop_path`, which panels send as an
+ *  array of URLs, a single URL string, or a JSON-encoded array. */
+export function firstBackdrop(value: unknown): string {
+  let candidates: unknown[] = Array.isArray(value) ? value : [value];
+  if (typeof value === 'string' && value.trim().startsWith('[')) {
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) candidates = parsed;
+    } catch {
+      // Not JSON: treat as a plain URL below.
+    }
+  }
+  for (const candidate of candidates) {
+    const url = toStr(candidate).trim();
+    if (/^https?:\/\//i.test(url)) return url;
+  }
+  return '';
+}
+
 function firstNonEmptyString(...values: unknown[]): string {
   for (const value of values) {
     const text = toStr(value);
@@ -478,6 +497,7 @@ export function createXtreamClient(creds: XtreamCredentials, accountId = '') {
         releaseDate: toStr(i.releasedate ?? i.release_date),
         durationSecs: toNumber(i.duration_secs),
         poster: toStr(i.movie_image ?? i.cover_big),
+        backdrop: firstBackdrop(i.backdrop_path ?? i.backdrop),
         subtitles: parseSubtitles(i.subtitles),
         imdbId: toStr(i.imdb_id ?? i.imdb).replace(/^tt/i, ''),
         tmdbId: toStr(i.tmdb_id ?? i.tmdb),
@@ -574,6 +594,7 @@ export function createXtreamClient(creds: XtreamCredentials, accountId = '') {
           toNumber(Array.isArray(runTime) ? runTime[0] : runTime),
         ),
         poster: firstNonEmptyString(info.cover, info.movie_image, info.cover_big),
+        backdrop: firstBackdrop(info.backdrop_path ?? info.backdrop),
         rating: firstNonEmptyString(info.rating, info.rating_5based),
         imdbId: firstNonEmptyString(info.imdb_id, info.imdb).replace(/^tt/i, ''),
         tmdbId: firstNonEmptyString(info.tmdb_id, info.tmdb),

@@ -251,6 +251,7 @@ export class Movies extends CatalogView<VodCategory, VodItem> {
 
     morph(this.layer('detail'), html`
       <div class="catalog-view movies-detail" data-nav-container>
+        ${this.detailBackdrop(info?.backdrop || poster)}
         <div class="detail-poster-wrap">${this.posterCell(vod.name, poster)}</div>
         <div class="detail-body">
           <h1 class="detail-title">${vod.name}</h1>

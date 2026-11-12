@@ -6,6 +6,7 @@ import { channelKey, legacyChannelKey } from '../utils/channel';
 import { genPlaylistId } from '../utils/playlist';
 import { isCatalogSort, isCatalogSortDirection, type CatalogSortPreference } from '../utils/catalog-sort';
 import { normalizeXtreamBaseUrl } from '../utils/xtream-url';
+import { xtreamAccountFromPlaylistUrl } from '../utils/on-demand-url';
 import { createLogger } from '../utils/logger';
 import { isLocalePreference, type LocalePreference } from '../i18n';
 import {
@@ -624,6 +625,31 @@ function evictCache(): void {
   ));
 }
 
+/**
+ * A pasted `get.php?username=…&password=…` URL is an Xtream account. Loading it
+ * as a plain M3U puts every movie and episode into Live (several per channel),
+ * which is what runs a TV out of memory; as an account the same id keeps its
+ * user data and gains Movies and Series.
+ */
+function upgradeXtreamPlaylistUrls(list: PlaylistEntry[]): boolean {
+  let changed = false;
+  for (const pl of list) {
+    if (pl.source && pl.source !== 'url') continue;
+    const account = xtreamAccountFromPlaylistUrl(pl.url);
+    if (!account) continue;
+    pl.source = 'xtream';
+    pl.url = normalizeXtreamBaseUrl(account.baseUrl);
+    pl.xtream = {
+      username: account.username,
+      password: account.password,
+      liveOutput: account.liveOutput,
+    };
+    changed = true;
+    log.info('Converted an Xtream playlist URL to an account', 'event=playlist.xtream_url.upgraded');
+  }
+  return changed;
+}
+
 export const StorageService = {
   get,
   set,
@@ -702,10 +728,12 @@ export const StorageService = {
     for (const pl of list) {
       if (!pl.id) { pl.id = genPlaylistId(); changed = true; }
     }
+    if (upgradeXtreamPlaylistUrls(list)) changed = true;
     if (changed) set('playlists', list);
     return list;
   },
   setPlaylists(playlists: PlaylistEntry[]): boolean {
+    upgradeXtreamPlaylistUrls(playlists);
     const previous = get<PlaylistEntry[]>('playlists', []);
     if (JSON.stringify(previous) === JSON.stringify(playlists)) return true;
     const stored = set('playlists', playlists);
@@ -1080,6 +1108,43 @@ export const StorageService = {
     // A new setting gives Media service's window lookup another try.
     if (mode !== this.getHeaderPlayback()) remove('luna_window_unsupported');
     set('header_playback', mode);
+  },
+
+  /** Live shows channels as a card grid (default) or the compact list. */
+  getLiveLayout(): 'grid' | 'list' {
+    return get<unknown>('live_layout', 'grid') === 'list' ? 'list' : 'grid';
+  },
+  setLiveLayout(layout: 'grid' | 'list'): void {
+    set('live_layout', layout);
+  },
+
+  /** The country Live is narrowed to; '' shows every country, null = never chosen. */
+  getLiveRegion(): string | null {
+    const value = get<unknown>('live_region', null);
+    return typeof value === 'string' ? value : null;
+  },
+  setLiveRegion(code: string): void {
+    set('live_region', code);
+  },
+
+  /** Where Live was left, so the next launch opens on the same group. */
+  getLiveLocation(): { group: string; playlist: string } | null {
+    const value = get<unknown>('live_location', null);
+    if (!value || typeof value !== 'object') return null;
+    const { group, playlist } = value as { group?: unknown; playlist?: unknown };
+    return typeof group === 'string' && typeof playlist === 'string' ? { group, playlist } : null;
+  },
+  setLiveLocation(group: string, playlist: string): void {
+    set('live_location', { group, playlist });
+  },
+
+  /** Movies and episodes mixed into an M3U list stay out of Live (default on). */
+  getHideOnDemandInLive(): boolean {
+    return get<boolean>('hide_on_demand_in_live', true);
+  },
+  setHideOnDemandInLive(val: boolean): void {
+    set('hide_on_demand_in_live', val);
+    evictCache();
   },
 
   getAutoPlay(): boolean {

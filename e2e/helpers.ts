@@ -195,6 +195,15 @@ export async function measureRowTextFit(
 // Computed once per worker: walking the compat data per test is wasteful.
 const POST_TARGET_APIS = postTargetApis();
 
+// The specs drive the compact list; the card grid has its own unit tests.
+export async function seedListLayout(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('iptv_live_layout') === null) {
+      localStorage.setItem('iptv_live_layout', JSON.stringify('list'));
+    }
+  });
+}
+
 // Every spec imports `test` from here; it auto-stubs the service probe
 // before each test so no file has to repeat it.
 export const test = base.extend({
@@ -205,6 +214,7 @@ export const test = base.extend({
       await page.addInitScript(removeApis, POST_TARGET_APIS);
     }
     await stubUploadService(page);
+    await seedListLayout(page);
     const ringFailures = await auditRings(page, process.env.RING_AUDIT,
       `${testInfo.project.name} › ${testInfo.titlePath.slice(1).join(' › ')}`);
     await use(page);

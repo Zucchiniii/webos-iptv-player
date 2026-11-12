@@ -572,4 +572,13 @@ export const PL_MESSAGES = {
   'liveCategories.loadError': 'Nie udało się wczytać kategorii.',
   'liveCategories.tryAgain': 'Spróbuj ponownie',
   'liveCategories.settingsHint': 'Wczytywane są tylko wybrane kategorie. Mniej kategorii wczytuje się szybciej.',
+  'app.safeMode': 'Ostatnio aplikacja zamknęła się nieoczekiwanie, więc wczytano mniejszą listę kanałów.',
+  'app.channelLimit': 'Wczytano pierwsze {count} kanałów. Wybierz mniej kategorii, aby zobaczyć resztę.',
+  'channel.allCountries': 'Wszystkie kraje',
+  'settings.channelLayout': 'Układ kanałów',
+  'settings.channelLayoutGrid': 'Siatka',
+  'settings.channelLayoutList': 'Lista',
+  'settings.channelLayoutHint': 'Siatka pokazuje więcej kanałów naraz wraz z bieżącym programem. Lista jest zwarta.',
+  'settings.hideOnDemand': 'Ukryj filmy i seriale w Na żywo',
+  'settings.hideOnDemandHint': 'Wiele list podaje każdy film i odcinek jako kanał. Ukrycie ich sprawia, że Na żywo działa szybko i stabilnie na telewizorze.',
 } as const satisfies MessageCatalog;

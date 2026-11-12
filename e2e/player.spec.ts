@@ -272,8 +272,8 @@ test('dark player overlay keeps sidebar scrollbar dark on a light theme', async 
     track: getComputedStyle(element, '::-webkit-scrollbar-track').backgroundColor,
     thumb: getComputedStyle(element, '::-webkit-scrollbar-thumb').backgroundColor,
   }));
-  expect(colors.track).toBe('rgb(18, 18, 26)');
-  expect(colors.thumb).toBe('rgb(102, 102, 128)');
+  expect(colors.track).toBe('rgb(15, 16, 19)');
+  expect(colors.thumb).toBe('rgb(74, 75, 85)');
 });
 
 test('player sidebar expands groups and retains a selected group after tuning', async ({ page }) => {
@@ -654,7 +654,7 @@ test('the player menu ring follows the pointer and the D-pad, and returns to the
   const rows = menu.locator('.menu-item');
   await expect(menu).toHaveClass(/visible/);
   // Let the panel finish sliding in before aiming at a row.
-  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1920);
+  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1900);
 
   await moveOnto(page, rows.nth(1));
   await expect(rows.nth(1)).toHaveClass(/focused/);
@@ -691,7 +691,7 @@ test('the player menu lights the row it slides out under', async ({ page }) => {
   const rows = menu.locator('.menu-item');
   await page.mouse.move(960, 300);
   await page.keyboard.press('ArrowRight');
-  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1920);
+  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1900);
   const box = await rows.nth(2).boundingBox();
   if (!box) throw new Error('row has no bounding box');
   await page.keyboard.press('Escape');
@@ -835,7 +835,7 @@ test('the live subtitle sync adjuster keeps the channel panel shut at the screen
   await seedPointer(page);
   await page.mouse.move(1900, 540);
   await expect(menu).toHaveClass(/visible/);
-  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1920);
+  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1900);
   await menu.locator('[data-menu-action="__subs_open__"]').click();
   await menu.locator('[data-menu-action="__subs_track__"][data-track-index="0"]').click();
   await menu.locator('[data-menu-action="__subs_open__"]').click();

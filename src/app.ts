@@ -51,6 +51,7 @@ import { truncate } from './utils/text';
 import { $, show, hide } from './utils/dom';
 import { createLogger, installGlobalErrorHandlers, logEnvironment } from './utils/logger';
 import { FocusRing } from './navigation/focus-ring';
+import { BootGuard, sourceFingerprint } from './services/boot-guard';
 import { Focus, type FocusScope } from './navigation/focus-scope';
 import type {
   Action,
@@ -113,6 +114,7 @@ class App {
     const done = log.time('init');
     log.info('Initializing app');
     await StorageService.init();
+    BootGuard.installExitHandlers();
     ParentalControlService.reload();
     StorageService.setPlaylistsReplacedHandler((previous, next) =>
       ParentalControlService.reviewChangedSources(previous, next));
@@ -921,6 +923,8 @@ class App {
 
       const loadingText = $('#loading-text');
       if (loadingText) loadingText.textContent = t('app.loadingChannels');
+      const safeLevel = BootGuard.begin(sourceFingerprint(playlists));
+      PlaylistService.setSafeMode(safeLevel > 0);
       let lastProgressAt = 0;
       await PlaylistService.load(progress => {
         if (!loadingText) return;
@@ -937,7 +941,9 @@ class App {
       log.info('Channels loaded:', PlaylistService.channels.length,
         '| groups:', PlaylistService.groups.length,
         '| epgSources:', PlaylistService.epgSources);
-      const epgSources = this.epgSources();
+      // At the top safe level the guide waits for a manual refresh: a huge
+      // XMLTV feed is the other way a boot outgrows the TV's memory.
+      const epgSources = safeLevel >= 2 ? [] : this.epgSources();
       if (epgSources.length) log.info('Using EPG sources:', epgSources);
       else {
         log.warn('No EPG sources configured');
@@ -958,7 +964,11 @@ class App {
       this.showView('channels');
       this.channelList.render();
 
-      showToast(tp('app.channelsLoaded', PlaylistService.channels.length));
+      BootGuard.settle();
+      if (safeLevel > 0) showToast(t('app.safeMode'));
+      else if (PlaylistService.channelLimitReached) {
+        showToast(t('app.channelLimit', { count: PlaylistService.channels.length }));
+      } else showToast(tp('app.channelsLoaded', PlaylistService.channels.length));
       // Let the load confirmation finish before a new-category notice replaces it.
       setTimeout(() => this.showLiveCategoryNotices(), 3000);
 

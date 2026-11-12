@@ -542,4 +542,13 @@ export const ES_MESSAGES = {
   'liveCategories.loadError': 'No se pudieron cargar las categorías.',
   'liveCategories.tryAgain': 'Reintentar',
   'liveCategories.settingsHint': 'Solo se cargan las categorías que selecciones. Menos categorías cargan más rápido.',
+  'app.safeMode': 'La app se cerró inesperadamente la última vez, así que se cargó una lista de canales más pequeña.',
+  'app.channelLimit': 'Se cargaron los primeros {count} canales. Elige menos categorías para ver el resto.',
+  'channel.allCountries': 'Todos los países',
+  'settings.channelLayout': 'Vista de canales',
+  'settings.channelLayoutGrid': 'Cuadrícula',
+  'settings.channelLayoutList': 'Lista',
+  'settings.channelLayoutHint': 'La cuadrícula muestra más canales a la vez con lo que se emite ahora. La lista es compacta.',
+  'settings.hideOnDemand': 'Ocultar películas y series en En vivo',
+  'settings.hideOnDemandHint': 'Muchas listas incluyen cada película y episodio como canal. Ocultarlos mantiene En vivo rápido y estable en la TV.',
 } satisfies MessageCatalog;

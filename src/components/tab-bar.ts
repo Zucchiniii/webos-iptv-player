@@ -10,11 +10,15 @@ import { AccountSwitcher, type AccountMenuCloseReason } from './account-switcher
 // slot, `blank` one on nothing focusable.
 export type TabBarAccountMenuCloseReason = AccountMenuCloseReason | 'bar' | 'blank';
 import { t } from '../i18n';
+import { formatTime } from '../utils/time';
 import { createLogger } from '../utils/logger';
 import { Focus, Tier, type FocusScope } from '../navigation/focus-scope';
 
 // Cap for the expanded inline search box.
 export const SEARCH_INPUT_MAX_WIDTH = 600;
+// Where the section pill sits inside the bar while the search box is open;
+// matches `.tab-bar.search-open .tab-bar-pill` in css/tab-bar.css.
+const SEARCH_PILL_LEFT = 376;
 // `.tab-bar-search.expanded .tab-bar-search-input` margin-right in tab-bar.css.
 const SEARCH_INPUT_GAP = 14;
 // A little past the box's 260 ms width transition, in case transitionend never fires.
@@ -476,14 +480,17 @@ export class TabBar {
     this.handlers.onSearchClose();
   }
 
-  // Slide the input out from the magnifier toward the Settings tab.
+  // Slide the input out from the magnifier. While searching, the section
+  // pill moves beside the app name (css/tab-bar.css), freeing the bar's
+  // right side for the box.
   private setSearchWidth(input: HTMLInputElement): void {
     const icon = this.el?.querySelector<HTMLElement>('.tab-bar-search .search-icon');
-    const settings = this.el?.querySelector<HTMLElement>('.tab-bar-item[data-section="settings"]');
-    if (!icon) return;
+    const inner = this.el?.querySelector<HTMLElement>('.tab-bar-inner');
+    const pill = this.el?.querySelector<HTMLElement>('.tab-bar-pill');
+    if (!icon || !inner) return;
     const iconLeft = icon.getBoundingClientRect().left;
-    const settingsRight = settings ? settings.getBoundingClientRect().right : (this.el!.getBoundingClientRect().left + 96);
-    const gap = Math.max(160, Math.round(iconLeft - settingsRight - 24));
+    const pillRight = inner.getBoundingClientRect().left + SEARCH_PILL_LEFT + (pill?.offsetWidth ?? 0);
+    const gap = Math.max(160, Math.round(iconLeft - pillRight - 24));
     input.style.width = `${Math.min(SEARCH_INPUT_MAX_WIDTH, gap)}px`;
   }
 
@@ -495,6 +502,12 @@ export class TabBar {
 
   private ensureEl(): void {
     if (this.el) return;
+    // A cheap textContent write; the glanceable time every TV home screen shows.
+    window.setInterval(() => {
+      const clock = this.el?.querySelector('.tab-bar-clock');
+      const now = formatTime(new Date());
+      if (clock && clock.textContent !== now) clock.textContent = now;
+    }, 10000);
     this.el = document.createElement('div');
     this.el.className = 'tab-bar';
     // Self-activates on click (its own handler is the "OK" action); mark so the
@@ -505,17 +518,22 @@ export class TabBar {
 
   private render(): void {
     if (!this.el) return;
+    this.el.classList.toggle('search-open', this.searchExpanded);
     morph(this.el, html`
       <div class="tab-bar-inner" data-nav-container>
+        <span class="tab-bar-brand" data-key="brand" aria-hidden="true"></span>
         <span class="tab-bar-title">${CONFIG.APP_NAME}</span>
-        ${this.sections.filter((s) => s.id !== 'search').map((s) => {
-          const activeCls = s.id === this.active ? 'active' : '';
-          return html`
-          <button class="tab-bar-item ${activeCls}"
-                  data-key="${s.id}" data-section="${s.id}" aria-label="${t(s.labelKey)}">${t(s.labelKey)}</button>
-        `;
-        })}
+        <div class="tab-bar-pill" data-key="pill">
+          ${this.sections.filter((s) => s.id !== 'search').map((s) => {
+            const activeCls = s.id === this.active ? 'active' : '';
+            return html`
+            <button class="tab-bar-item ${activeCls}"
+                    data-key="${s.id}" data-section="${s.id}" aria-label="${t(s.labelKey)}">${t(s.labelKey)}</button>
+          `;
+          })}
+        </div>
         <div class="tab-bar-search ${this.searchExpanded ? 'expanded' : ''}" data-key="search-slot" data-morph-preserve></div>
+        <time class="tab-bar-clock" data-key="clock">${formatTime(new Date())}</time>
         ${this.lockShown ? html`
           <button class="tab-bar-item tab-bar-lock"
                   data-key="lock-now" data-lock-now>${raw(UNLOCK_ICON)}<span>${t('parental.lockNow')}</span></button>

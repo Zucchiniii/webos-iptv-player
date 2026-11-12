@@ -36,6 +36,12 @@ export function applyTextSize(size: string): void {
 /** Re-assert the stored theme + overlay style on boot (belt-and-suspenders
  *  alongside the inline <head> script that beats the first paint). */
 export function initTheme(): void {
+  // The 2.0 redesign moves everyone still on the old default (Midnight) to
+  // Noir once; a theme picked after that is kept.
+  if (!StorageService.get<boolean>('design_v2', false)) {
+    if (StorageService.getTheme() === 'midnight') StorageService.setTheme(DEFAULT_THEME);
+    StorageService.set('design_v2', true);
+  }
   applyTheme(StorageService.getTheme());
   applyOverlayStyle(StorageService.getOverlayStyle());
   applyTextSize(StorageService.getTextSize());

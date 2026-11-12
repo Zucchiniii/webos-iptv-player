@@ -22,6 +22,13 @@ export const CONFIG = {
   DEFAULT_PLAYLIST_REFRESH_INTERVAL_MS: 6 * 60 * 60 * 1000,
   WORKER_IDLE_TERMINATION_MS: 1000,
   PLAYLIST_CACHE_WRITE_DELAY_MS: 1200,
+  // Live channels kept per load. Past this the renderer nears the webOS
+  // memory killer on 1–2 GB TVs, so the rest of the list is skipped.
+  MAX_LIVE_CHANNELS: 150000,
+  // After a load that never finished (the TV killed the app), the next boot
+  // keeps far fewer channels and defers the guide so the app can open.
+  SAFE_MODE_MAX_LIVE_CHANNELS: 40000,
+  SAFE_MODE_BOOT_WINDOW_MS: 45 * 1000,
   DEFAULT_EPG_REFRESH_INTERVAL_MS: 6 * 60 * 60 * 1000,
   REMINDER_SCAN_INTERVAL: 30 * 1000,
   CHANNEL_SCROLLBAR_HIDE_MS: 900,

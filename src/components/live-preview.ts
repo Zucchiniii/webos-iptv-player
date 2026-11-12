@@ -224,7 +224,10 @@ export class LivePreview {
       return;
     }
     const wasShowing = this.isShowing;
+    const layoutChanged = channelView.classList.contains('has-live-preview') !== shouldShow;
     channelView.classList.toggle('has-live-preview', shouldShow);
+    // The channel grid gives way to the list beside the preview, and back.
+    if (layoutChanged) this.options.channelList.render(false);
     if (shouldShow && state) this.show(state);
     else this.hidePreview(currentView, state, wasShowing);
   }

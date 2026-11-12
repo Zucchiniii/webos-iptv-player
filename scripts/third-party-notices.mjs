@@ -20,6 +20,7 @@ const VENDORED_FILES = [
   ['licenses/ass-compiler.txt', 'licenses/ass-compiler.txt'],
   ['licenses/qrcode-generator.txt', 'licenses/qrcode-generator.txt'],
   ['licenses/twemoji.txt', 'licenses/twemoji.txt'],
+  ['licenses/inter.txt', 'licenses/inter.txt'],
   ['licenses/shaka-cml-cmcd.txt', 'node_modules/shaka-player/third_party/cml-cmcd/LICENSE'],
   ['licenses/shaka-cml-cmcd-NOTICE.txt', 'node_modules/shaka-player/third_party/cml-cmcd/NOTICE'],
 ];

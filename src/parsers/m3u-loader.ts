@@ -9,6 +9,7 @@ import {
 } from '../utils/xtream-live-match';
 import { createLogger } from '../utils/logger';
 import { createGroupNameMatcher, type XtreamGroupNameFilter } from '../utils/xtream-category-filter';
+import { isOnDemandStreamLocation } from '../utils/on-demand-url';
 import { runAppWorkerTask } from '../workers/app-worker-client';
 import type {
   M3UWorkerChunk,
@@ -19,6 +20,10 @@ import type { XtreamLiveReference } from '../utils/xtream-live-match';
 import type { XtreamLiveStream } from '../services/xtream-client';
 
 export type M3ULoadResult = M3UWorkerResponse;
+export interface M3ULoadLimits {
+  dropOnDemand?: boolean;
+  maxChannels?: number;
+}
 export interface M3ULoadProgress {
   inputBytes: number;
   chunks: number;
@@ -37,6 +42,7 @@ export async function fetchAndParseM3U(
   xtreamBaseUrl = '',
   onProgress?: (progress: M3ULoadProgress) => void,
   groupFilter?: XtreamGroupNameFilter,
+  limits: M3ULoadLimits = {},
 ): Promise<M3ULoadResult> {
   const started = Date.now();
   const filter = liveStreams !== undefined
@@ -62,11 +68,14 @@ export async function fetchAndParseM3U(
       : undefined,
     ...(xtreamBaseUrl ? { xtreamBaseUrl } : {}),
     ...(groupFilter ? { xtreamGroupFilter: groupFilter } : {}),
+    ...(limits.dropOnDemand ? { dropOnDemand: true } : {}),
+    ...(limits.maxChannels ? { maxChannels: limits.maxChannels } : {}),
   };
   const channelBatches: Channel[] = [];
+  const interned = createChannelInterner();
   const handleChunk = (chunk: M3UWorkerChunk): void => {
     if (chunk.kind === 'channels') {
-      channelBatches.push(...chunk.channels);
+      for (const channel of chunk.channels) channelBatches.push(interned(channel));
     } else {
       log.info(
         'M3U stream load progress',
@@ -106,7 +115,10 @@ export async function fetchAndParseM3U(
     throw error;
   }
   if (channelBatches.length) {
-    result.data.channels = channelBatches.concat(result.data.channels);
+    for (const channel of result.data.channels) channelBatches.push(interned(channel));
+    result.data.channels = channelBatches;
+  } else {
+    result.data.channels = result.data.channels.map(interned);
   }
   log.info(
     'M3U stream loaded',
@@ -174,6 +186,7 @@ export async function fetchAndParseM3UInWorker(
     request.xtreamLive,
     request.xtreamBaseUrl,
     request.xtreamGroupFilter,
+    request.dropOnDemand === true,
   );
   let emittedChannels = 0;
   let inputBytes = 0;
@@ -183,6 +196,7 @@ export async function fetchAndParseM3UInWorker(
   let reportedChannelsEmitted = -1;
   let reportedChannelsDropped = -1;
   const options: M3UParseOptions = {
+    ...(request.maxChannels ? { maxChannels: request.maxChannels } : {}),
     ...(liveFilters.streamLocationPrefilter
       ? { streamLocationPrefilter: liveFilters.streamLocationPrefilter }
       : {}),
@@ -323,12 +337,22 @@ export function createXtreamM3ULiveFilters(
   references?: XtreamLiveReference[],
   baseUrl = '',
   groupFilter?: XtreamGroupNameFilter,
+  dropOnDemand = false,
 ): XtreamM3ULiveFilters {
   let droppedChannels = 0;
   if (references === undefined) {
     const keepGroup = groupFilter ? createGroupNameMatcher(groupFilter) : null;
     return {
       mode: baseUrl ? 'unavailable' : 'none',
+      ...(dropOnDemand
+        ? {
+            streamLocationPrefilter: (location: string) => {
+              if (!isOnDemandStreamLocation(location)) return true;
+              droppedChannels++;
+              return false;
+            },
+          }
+        : {}),
       ...(keepGroup
         ? {
             channelPostfilter: (channel: Channel) => {
@@ -363,6 +387,27 @@ export function createXtreamM3ULiveFilters(
       return true;
     },
     getDroppedCount: () => droppedChannels,
+  };
+}
+
+/**
+ * Each worker batch arrives as its own structured clone, so the same group
+ * name or membership list is a fresh copy in every batch. Sharing one copy
+ * per distinct value keeps a 100k-channel list from holding 100k duplicates.
+ */
+export function createChannelInterner(): (channel: Channel) => Channel {
+  const strings = new Map<string, string>();
+  const intern = (value: string): string => {
+    const known = strings.get(value);
+    if (known !== undefined) return known;
+    strings.set(value, value);
+    return value;
+  };
+  return (channel: Channel): Channel => {
+    channel.group = intern(channel.group);
+    if (channel.sourceGroups) channel.sourceGroups = channel.sourceGroups.map(intern);
+    if (channel.catchup) channel.catchup = intern(channel.catchup);
+    return channel;
   };
 }
 

@@ -1,6 +1,6 @@
 import { type Browser, type Page } from '@playwright/test';
 import { LEGACY_HEADER, postTargetApis, removeApis } from '../scripts/chromium-53-simulation.mjs';
-import { stubUploadService } from './helpers';
+import { seedListLayout, stubUploadService } from './helpers';
 
 const POST_TARGET_APIS = postTargetApis();
 
@@ -18,6 +18,7 @@ export async function newLegacyPage(browser: Browser): Promise<{ page: Page; clo
   const page = await context.newPage();
   await page.addInitScript(removeApis, POST_TARGET_APIS);
   await stubUploadService(page);
+  await seedListLayout(page);
   return { page, close: () => context.close() };
 }
 

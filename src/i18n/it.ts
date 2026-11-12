@@ -540,4 +540,13 @@ export const IT_MESSAGES = {
   'liveCategories.loadError': 'Impossibile caricare le categorie.',
   'liveCategories.tryAgain': 'Riprova',
   'liveCategories.settingsHint': 'Vengono caricate solo le categorie selezionate. Meno categorie, caricamento più rapido.',
+  'app.safeMode': 'L’app si è chiusa in modo imprevisto l’ultima volta, quindi è stato caricato un elenco di canali ridotto.',
+  'app.channelLimit': 'Caricati i primi {count} canali. Scegli meno categorie per vedere gli altri.',
+  'channel.allCountries': 'Tutti i paesi',
+  'settings.channelLayout': 'Vista canali',
+  'settings.channelLayoutGrid': 'Griglia',
+  'settings.channelLayoutList': 'Elenco',
+  'settings.channelLayoutHint': 'La griglia mostra più canali insieme a cosa va in onda ora. L’elenco è compatto.',
+  'settings.hideOnDemand': 'Nascondi film e serie in Diretta',
+  'settings.hideOnDemandHint': 'Molte playlist elencano ogni film ed episodio come canale. Nasconderli mantiene la Diretta veloce e stabile sulla TV.',
 } satisfies MessageCatalog;

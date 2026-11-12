@@ -1171,7 +1171,7 @@ describe('Movies browse + grid', () => {
       const view = await eightFullCategories();
       const { track, tile, writes } = stubRail(1280); // ends exactly at 1500
       keyOnto(view, tile);
-      expect(writes).toEqual([{ value: 1512 - 1000, behavior: 'auto' }]);
+      expect(writes).toEqual([{ value: 1516 - 1000, behavior: 'auto' }]);
       expect(track.style.scrollBehavior).toBe('smooth');
       expect(focusedKey()).toBe(tile.dataset.key);
     });
@@ -1180,7 +1180,7 @@ describe('Movies browse + grid', () => {
       const view = await eightFullCategories();
       const { tile, writes } = stubRail(1400);
       keyOnto(view, tile);
-      expect(writes).toEqual([{ value: 1632 - 1000, behavior: 'smooth' }]);
+      expect(writes).toEqual([{ value: 1636 - 1000, behavior: 'smooth' }]);
     });
 
     it('leaves the rail alone when a pointer focuses an edge tile', async () => {

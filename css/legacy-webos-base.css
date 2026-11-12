@@ -17,19 +17,20 @@
  * generated margin — notably `margin: auto` — is restated under the same
  * class in legacy-webos-overrides.css, which is linked last.
  */
-html.q-scroll-end-padding .playlist-tabs::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 3px; margin-right: -8px; }
-html.q-scroll-end-padding .player-sidebar .sidebar-tabs::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 3px; margin-right: -8px; }
+html.q-scroll-end-padding .playlist-tabs::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 11px; margin-right: -20px; }
+html.q-scroll-end-padding .region-chips::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 13px; margin-right: -20px; }
+html.q-scroll-end-padding .player-sidebar .sidebar-tabs::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 7px; margin-right: -16px; }
 html.q-scroll-end-padding .epg-date-list::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 7px; margin-right: -16px; }
-html.q-scroll-end-padding .catalog-rail-track::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: -9px; margin-right: -12px; }
+html.q-scroll-end-padding .catalog-rail-track::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: -7px; margin-right: -16px; }
 html.q-scroll-end-padding .playlist-tabs.epg-playlist-tabs::after { content: ''; flex: 0 0 1px; width: 1px; height: 1px; margin-left: 9px; margin-right: -12px; }
 html.q-scroll-end-padding .playlist-tabs.parental-tabs::after { content: none; }
 html.q-no-flex-gap .live-badge > * + * { margin-left: 6px; }
 html.q-no-flex-gap .loading-container > * + * { margin-top: 24px; }
 html.q-no-flex-gap .reminder-buttons > * + *, html.q-no-flex-gap .catchup-resume-buttons > * + *, html.q-no-flex-gap .confirmation-buttons > * + * { margin-left: 24px; }
-html.q-no-flex-gap .playlist-tabs > * + * { margin-left: 4px; }
-html.q-no-flex-gap .group-item > * + * { margin-left: 12px; }
+html.q-no-flex-gap .playlist-tabs > * + * { margin-left: 8px; }
+html.q-no-flex-gap .group-item > * + * { margin-left: 14px; }
 html.q-no-flex-gap .channel-list-scroll.recent-list > * + * { margin-top: 4px; }
-html.q-no-flex-gap .channel-item > * + * { margin-left: 16px; }
+html.q-no-flex-gap .channel-item > * + * { margin-left: 18px; }
 html.q-no-flex-gap .edit-hints > * + * { margin-left: 24px; }
 html.q-no-flex-gap .edit-hint > * + * { margin-left: 8px; }
 html.q-no-flex-gap .preview-list-context > * + * { margin-left: 24px; }
@@ -41,6 +42,12 @@ html.q-no-flex-gap .epg-mapping-option > * + * { margin-top: 3px; }
 }
 html.q-no-flex-gap .channel-edit-overlay-back > * + * { margin-left: 8px; }
 html.q-no-flex-gap .epg-offset-badge > * + * { margin-left: 5px; }
+html.q-no-flex-gap .region-chips > * + * { margin-left: 6px; }
+html.q-no-flex-gap .channel-hero > * + * { margin-left: 28px; }
+html.q-no-flex-gap .channel-hero-kicker > * + * { margin-left: 12px; }
+html.q-no-flex-gap .channel-hero-now > * + * { margin-left: 14px; }
+html.q-no-flex-gap .channel-hero-next > * + * { margin-top: 4px; }
+html.q-no-flex-gap .channel-item.channel-card > * + * { margin-left: 16px; }
 html.q-no-flex-gap .live-preview-heading > * + * { margin-left: 20px; }
 html.q-no-flex-gap .live-preview-controls > * + * { margin-left: 8px; }
 html.q-no-flex-gap .live-preview-program > * + * { margin-left: 18px; }
@@ -57,7 +64,7 @@ html.q-no-flex-gap .osd-next-episode-actions > * + * { margin-left: 16px; }
 html.q-no-flex-gap .player-sidebar .sidebar-group-width-probe > * + * { margin-left: 10px; }
 html.q-no-flex-gap .player-sidebar .sidebar-channel-title > * + * { margin-left: 12px; }
 html.q-no-flex-gap .player-sidebar .sidebar-group-item > * + * { margin-left: 10px; }
-html.q-no-flex-gap .player-sidebar .sidebar-tabs > * + * { margin-left: 4px; }
+html.q-no-flex-gap .player-sidebar .sidebar-tabs > * + * { margin-left: 8px; }
 html.q-no-flex-gap .player-sidebar .sidebar-ch-item > * + * { margin-left: 14px; }
 html.q-no-flex-gap .player-sidebar .sidebar-ch-item .ch-info > * + * { margin-top: 2px; }
 html.q-no-flex-gap .player-menu .menu-items > * + * { margin-top: 6px; }
@@ -120,17 +127,19 @@ html.q-no-flex-gap .reminder-day-cards > * + * { margin-top: 12px; }
 }
 html.q-no-flex-gap .reminder-manager-time > * + * { margin-left: 10px; }
 html.q-no-flex-gap .reminder-manager-empty > * + * { margin-top: 12px; }
-html.q-no-flex-gap .tab-bar-inner > * + * { margin-left: 32px; }
+html.q-no-flex-gap .tab-bar-pill > * + * { margin-left: 4px; }
 html.q-no-flex-gap .search-list > * + * { margin-top: 8px; }
 html.q-no-flex-gap .search-channel-row > * + * { margin-left: 24px; }
 html.q-no-flex-gap .search-program-list > * + * { margin-top: 8px; }
 html.q-no-flex-gap .search-program-row > * + * { margin-left: 24px; }
-html.q-no-flex-gap .catalog-rail-track > * + * { margin-left: 20px; }
+html.q-no-flex-gap .catalog-hero-meta > * + * { margin-left: 10px; }
+html.q-no-flex-gap .catalog-hero-chip > * + * { margin-left: 6px; }
+html.q-no-flex-gap .catalog-rail-track > * + * { margin-left: 22px; }
 html.q-no-flex-gap .catalog-sort > * + * { margin-left: 16px; }
 html.q-no-flex-gap .catalog-sort .catalog-sort-direction > * + * { margin-left: 10px; }
-html.q-no-flex-gap .movies-detail > * + * { margin-left: 56px; }
+html.q-no-flex-gap .movies-detail > * + * { margin-left: 64px; }
 html.q-no-flex-gap .detail-actions > * + * { margin-left: 12px; }
-html.q-no-flex-gap .detail-btn > * + * { margin-left: 10px; }
+html.q-no-flex-gap .detail-btn > * + * { margin-left: 12px; }
 html.q-no-flex-gap .series-detail-head > * + * { margin-left: 56px; }
 html.q-no-flex-gap .series-seasons > * + * { margin-left: 16px; }
 html.q-no-flex-gap .episode-row > * + * { margin-left: 20px; }
@@ -145,8 +154,9 @@ html.q-no-flex-gap .parental-row > * + * { margin-left: 12px; }
 html.q-no-flex-gap .parental-pin-actions > * + * { margin-left: 16px; }
 html.q-no-flex-gap .live-category-header > * + * { margin-left: 32px; }
 html.q-no-flex-gap .live-category-row > * + * { margin-left: 12px; }
-html.q-no-flex-gap .playlist-tabs::after { margin-left: 7px; }
-html.q-no-flex-gap .player-sidebar .sidebar-tabs::after { margin-left: 7px; }
+html.q-no-flex-gap .playlist-tabs::after { margin-left: 19px; }
+html.q-no-flex-gap .region-chips::after { margin-left: 19px; }
+html.q-no-flex-gap .player-sidebar .sidebar-tabs::after { margin-left: 15px; }
 html.q-no-flex-gap .epg-date-list::after { margin-left: 15px; }
-html.q-no-flex-gap .catalog-rail-track::after { margin-left: 11px; }
+html.q-no-flex-gap .catalog-rail-track::after { margin-left: 15px; }
 html.q-no-flex-gap .playlist-tabs.epg-playlist-tabs::after { margin-left: 11px; }

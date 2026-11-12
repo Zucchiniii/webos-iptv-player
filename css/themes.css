@@ -13,7 +13,39 @@
  * are converted to legacy-compatible colors at build time.
  */
 
-/* Midnight — the default. Mirrors main.css :root so an explicit
+/* Noir — the default. A true-black OLED canvas: content carries the color,
+   chrome is quiet glass, and focus is a white ring that reads from the sofa. */
+[data-theme="noir"] {
+  --bg-primary: #07080a;
+  --bg-rgb: 7 8 10;
+  --catalog-hero-scrim-rgb: 7 8 10;
+  --bg-secondary: #0f1013;
+  --bg-tertiary: #18191e;
+  --bg-card: #1d1e24;
+  --text-primary: #f4f4f6;
+  --fg-rgb: 244 244 246;
+  --text-secondary: #a3a4ad;
+  --text-muted: #6c6d78;
+  --scrollbar-thumb: #4a4b55;
+  --accent: #8f7dff;
+  --accent-dim: #5b47e0;
+  --catalog-sort-selected-bg: #5b47e0;
+  --accent-rgb: 143 125 255;
+  --accent-glow: rgb(var(--fg-rgb) / 0.14);
+  --focus-ring: #ffffff;
+  --danger: #ff4d5e;
+  --danger-rgb: 255 77 94;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --warning-rgb: 251 191 36;
+  --border: #23242b;
+  --catalog-surface: #121317;
+  --catalog-control: #1f2026;
+  --catalog-focus: #ffffff;
+  --catalog-focus-rgb: 255 255 255;
+}
+
+/* Midnight — the original default. Mirrors main.css :root so an explicit
    data-theme="midnight" (and the Midnight swatch) resolve correctly on any
    element, not just the unset root. Keep in sync with main.css :root. */
 [data-theme="midnight"] {
@@ -36,6 +68,8 @@
   --warning: #ffa502;
   --warning-rgb: 255 165 2;
   --border: #2a2a3e;
+  --fg-rgb: 232 232 232;
+  --bg-rgb: 10 10 15;
 }
 
 [data-theme="ember"] {
@@ -58,6 +92,8 @@
   --warning: #ffb703;
   --warning-rgb: 255 183 3;
   --border: #362e27;
+  --fg-rgb: 240 233 226;
+  --bg-rgb: 20 17 15;
 }
 
 [data-theme="emerald"] {
@@ -80,6 +116,8 @@
   --warning: #ffcf56;
   --warning-rgb: 255 207 86;
   --border: #21362d;
+  --fg-rgb: 230 239 233;
+  --bg-rgb: 10 20 16;
 }
 
 [data-theme="amethyst"] {
@@ -102,6 +140,8 @@
   --warning: #ffb020;
   --warning-rgb: 255 176 32;
   --border: #2c2140;
+  --fg-rgb: 236 230 245;
+  --bg-rgb: 16 10 26;
 }
 
 /* Daylight — our light theme. */
@@ -125,6 +165,8 @@
   --warning: #d9820b;
   --warning-rgb: 217 130 11;
   --border: #dfe3ea;
+  --fg-rgb: 31 36 48;
+  --bg-rgb: 246 247 249;
 }
 
 [data-theme="plum-night"] {
@@ -147,6 +189,8 @@
   --warning: #f1fa8c;
   --warning-rgb: 241 250 140;
   --border: #44475a;
+  --fg-rgb: 248 248 242;
+  --bg-rgb: 40 42 54;
 }
 
 [data-theme="arctic"] {
@@ -169,6 +213,8 @@
   --warning: #ebcb8b;
   --warning-rgb: 235 203 139;
   --border: #434c5e;
+  --fg-rgb: 236 239 244;
+  --bg-rgb: 46 52 64;
 }
 
 [data-theme="ocean-dark"] {
@@ -191,6 +237,8 @@
   --warning: #b58900;
   --warning-rgb: 181 137 0;
   --border: #0e4b59;
+  --fg-rgb: 147 161 161;
+  --bg-rgb: 0 43 54;
 }
 
 [data-theme="vintage-amber"] {
@@ -213,6 +261,8 @@
   --warning: #fabd2f;
   --warning-rgb: 250 189 47;
   --border: #504945;
+  --fg-rgb: 235 219 178;
+  --bg-rgb: 40 40 40;
 }
 
 [data-theme="pastel-mocha"] {
@@ -235,6 +285,8 @@
   --warning: #f9e2af;
   --warning-rgb: 249 226 175;
   --border: #45475a;
+  --fg-rgb: 205 214 244;
+  --bg-rgb: 30 30 46;
 }
 
 [data-theme="neon-night"] {
@@ -257,6 +309,8 @@
   --warning: #e0af68;
   --warning-rgb: 224 175 104;
   --border: #292e42;
+  --fg-rgb: 192 202 245;
+  --bg-rgb: 26 27 38;
 }
 
 /* Pastel Latte — light. */
@@ -280,6 +334,8 @@
   --warning: #df8e1d;
   --warning-rgb: 223 142 29;
   --border: #ccd0da;
+  --fg-rgb: 76 79 105;
+  --bg-rgb: 239 241 245;
 }
 
 /* Paper Light — light. */
@@ -303,6 +359,8 @@
   --warning: #b58900;
   --warning-rgb: 181 137 0;
   --border: #ded8c5;
+  --fg-rgb: 88 110 117;
+  --bg-rgb: 253 246 227;
 }
 
 /* Burgundy — layered wine reds with a restrained rose-gold accent. */
@@ -326,6 +384,8 @@
   --warning: #d6a65d;
   --warning-rgb: 214 166 93;
   --border: #4a2732;
+  --fg-rgb: 246 233 235;
+  --bg-rgb: 20 11 16;
 }
 
 /* Cobalt Slate — cool graphite surfaces with a clear cobalt-blue focus. */
@@ -349,6 +409,8 @@
   --warning: #e5c07b;
   --warning-rgb: 229 192 123;
   --border: #3e4451;
+  --fg-rgb: 171 178 191;
+  --bg-rgb: 40 44 52;
 }
 
 /* Scrollbars follow muted text on dark themes. Light themes use a softer

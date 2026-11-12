@@ -339,7 +339,7 @@ test('the subtitle sync adjuster keeps the keys, and the screen edge keeps the m
   await seedXtream(page);
   await startVodPlayback(page);
   const menu = page.locator('#player-menu');
-  const settled = () => expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1920);
+  const settled = () => expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1900);
   await page.mouse.move(1900, 540);
   await expect(menu).toHaveClass(/visible/);
   await settled();
@@ -392,7 +392,7 @@ test('Back closes the subtitle sync adjuster over a shown OSD and leaves the OSD
   const menu = page.locator('#player-menu');
   await page.mouse.move(1900, 540);
   await expect(menu).toHaveClass(/visible/);
-  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1920);
+  await expect.poll(() => menu.evaluate((el) => el.getBoundingClientRect().right)).toBe(1900);
   await menu.locator('[data-menu-action="__subs_open__"]').click();
   await menu.locator('[data-menu-action="__subs_track__"][data-track-index="2000"]').click();
   await menu.locator('[data-menu-action="__subs_open__"]').click();

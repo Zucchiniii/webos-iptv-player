@@ -62,6 +62,7 @@ cpSync('assets/icon80.png', 'dist/icon.png');
 cpSync('assets/icon130.png', 'dist/largeIcon.png');
 cpSync('assets/group-icons', 'dist/assets/group-icons', { recursive: true });
 cpSync('assets/icons', 'dist/assets/icons', { recursive: true });
+cpSync('assets/fonts', 'dist/assets/fonts', { recursive: true });
 
 // Main app bundle — playback libraries remain separate. Shaka is shipped as a
 // lazy TV bundle for Widevine and is also used by the desktop preview.

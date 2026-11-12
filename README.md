@@ -12,6 +12,18 @@
   </p>
 </div>
 
+## What's new in 2.0 (this fork)
+
+- **Stable with huge playlists.** Movies and series that M3U lists mix into Live are filtered out
+  (300,000-entry list: peak memory down ~2.7×), pasted `get.php` URLs become Xtream accounts,
+  Live is capped at 150,000 channels, and a crash during loading reopens the app in a safe mode
+  instead of crash-looping.
+- **Find channels fast.** A card grid with a header that shows what's on now and next for the
+  focused channel, country chips that turn a worldwide list into your own country's groups (your
+  TV's country is picked first), and Live reopens where you left it.
+- **2026 look.** True-black Noir theme, the Inter typeface, a floating glass navigation pill with a
+  clock, cinematic Movies/Series heroes and backdrops, and glass player overlays.
+
 ## Screenshots
 
 | Channel list | Live preview |

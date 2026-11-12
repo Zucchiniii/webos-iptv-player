@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Channel, ChannelCustomization } from '../types';
 import { UNCATEGORIZED_GROUP } from '../types';
 
@@ -10,6 +10,7 @@ const { storageMock, cacheMock, fetchTextMock } = vi.hoisted(() => ({
     getShowHiddenChannels: vi.fn(() => false),
     getChannelCustomization: vi.fn(() => null),
     getPlaylistRefreshIntervalMs: vi.fn(() => 6 * 60 * 60 * 1000),
+    getHideOnDemandInLive: vi.fn(() => true),
     setChannelCustomization: vi.fn(),
     clearChannelCustomization: vi.fn(),
     liveCategorySnapshots: new Map<string, unknown>(),
@@ -48,11 +49,18 @@ vi.mock('../parsers/m3u-loader', async (importOriginal) => {
         channelsDropped: number;
       }) => void,
       groupFilter?: { mode: 'include' | 'exclude'; names: string[] },
+      limits: { dropOnDemand?: boolean; maxChannels?: number } = {},
     ) => {
       const text = await fetchTextMock(url, timeout);
       const { parseM3U } = await import('../parsers/m3u-parser');
-      const liveFilters = actual.createXtreamM3ULiveFilters(streams, baseUrl, groupFilter);
+      const liveFilters = actual.createXtreamM3ULiveFilters(
+        streams,
+        baseUrl,
+        groupFilter,
+        limits.dropOnDemand === true,
+      );
       const data = parseM3U(text, url, {
+        ...(limits.maxChannels ? { maxChannels: limits.maxChannels } : {}),
         ...(liveFilters.streamLocationPrefilter
           ? {
               streamLocationPrefilter:
@@ -376,6 +384,89 @@ describe('PlaylistService.refresh', () => {
     expect(PlaylistService.channels.map(c => c.name)).toEqual(['Alpha', 'Bravo', 'Charlie']);
   });
 
+  describe('large lists', () => {
+    const MIXED = '#EXTM3U\n'
+      + '#EXTINF:-1 group-title="News",Alpha\nhttp://host/live/u/p/1.ts\n'
+      + '#EXTINF:-1 group-title="Films",Film\nhttp://host/movie/u/p/2.mkv\n'
+      + '#EXTINF:-1 group-title="Shows",Show S01 E01\nhttp://host/series/u/p/3.mp4\n'
+      + '#EXTINF:-1 group-title="News",Bravo\nhttp://host/live/u/p/4.ts\n';
+
+    beforeEach(() => {
+      storageMock.getPlaylists.mockReturnValue([
+        { id: 'a', name: 'P1', url: 'http://host1/p1.m3u' },
+      ]);
+      fetchTextMock.mockResolvedValue(MIXED);
+    });
+
+    afterEach(() => {
+      storageMock.getHideOnDemandInLive.mockReturnValue(true);
+      PlaylistService.setSafeMode(false);
+    });
+
+    it('keeps movies and episodes out of Live', async () => {
+      const channels = await PlaylistService.refresh();
+      expect(channels.map(c => c.name)).toEqual(['Alpha', 'Bravo']);
+    });
+
+    it('keeps them when the user shows on-demand entries in Live', async () => {
+      storageMock.getHideOnDemandInLive.mockReturnValue(false);
+      const channels = await PlaylistService.refresh();
+      expect(channels).toHaveLength(4);
+    });
+
+    it('shares one membership list per playlist set', async () => {
+      const channels = await PlaylistService.refresh();
+      expect(channels[0].playlistIds).toEqual(['a']);
+      expect(channels[1].playlistIds).toBe(channels[0].playlistIds);
+    });
+
+    it('copies a shared membership list instead of mutating it', async () => {
+      storageMock.getPlaylists.mockReturnValue([
+        { id: 'a', name: 'P1', url: 'http://host1/p1.m3u' },
+        { id: 'b', name: 'P2', url: 'http://host2/p2.m3u' },
+      ]);
+      fetchTextMock.mockImplementation((url: string) => Promise.resolve(url.includes('p1')
+        ? MIXED
+        : '#EXTM3U\n#EXTINF:-1,Alpha\nhttp://host/live/u/p/1.ts\n'));
+      const channels = await PlaylistService.refresh();
+      const alpha = channels.find(c => c.name === 'Alpha')!;
+      const bravo = channels.find(c => c.name === 'Bravo')!;
+      expect(alpha.playlistIds).toEqual(['a', 'b']);
+      expect(bravo.playlistIds).toEqual(['a']);
+    });
+
+    it('stops at the live channel limit and reports it', async () => {
+      const limits = CONFIG as { MAX_LIVE_CHANNELS: number };
+      const original = limits.MAX_LIVE_CHANNELS;
+      limits.MAX_LIVE_CHANNELS = 1;
+      try {
+        PlaylistService.setSafeMode(false);
+        const channels = await PlaylistService.refresh();
+        expect(channels.map(c => c.name)).toEqual(['Alpha']);
+        expect(PlaylistService.channelLimitReached).toBe(true);
+      } finally {
+        limits.MAX_LIVE_CHANNELS = original;
+      }
+    });
+
+    it('loads from the network instead of a cached list in safe mode', async () => {
+      cacheMock.getCachedPlaylist.mockResolvedValue({
+        channels: [channel({ name: 'Cached', url: 'http://host/c', playlistIds: ['a'] })],
+        epgSources: [],
+        timestamp: 1,
+      });
+      PlaylistService.setSafeMode(true);
+      const channels = await PlaylistService.load();
+      expect(cacheMock.getCachedPlaylist).not.toHaveBeenCalled();
+      expect(channels.map(c => c.name)).toEqual(['Alpha', 'Bravo']);
+      expect(fetchAndParseM3U).toHaveBeenCalledWith(
+        'http://host1/p1.m3u', expect.any(Number), undefined, undefined,
+        expect.any(Function), undefined,
+        { dropOnDemand: true, maxChannels: CONFIG.SAFE_MODE_MAX_LIVE_CHANNELS },
+      );
+    });
+  });
+
   it('persists the merged result to the cache', async () => {
     await PlaylistService.refresh();
     expect(cacheMock.scheduleCachedPlaylist).toHaveBeenCalledWith(
@@ -592,7 +683,7 @@ http://host:8080/live/u1/p1/102.ts`;
       url.includes('action=get_live_streams'))).toHaveLength(1);
   });
 
-  it('does not guess content type when the Player API Live catalog is unavailable', async () => {
+  it('drops only unmistakable on-demand entries when the Live catalog is unavailable', async () => {
     const mixed = `#EXTM3U
 #EXTINF:-1,Alpha
 http://host:8080/live/u1/p1/101.ts
@@ -616,12 +707,18 @@ not-a-url`;
 
     expect(channels.map(channel => channel.name)).toEqual([
       'Alpha',
-      'Bravo',
-      'Charlie',
       'Delta',
       'Echo',
       'Foxtrot',
     ]);
+
+    storageMock.getHideOnDemandInLive.mockReturnValue(false);
+    try {
+      const unfiltered = await PlaylistService.refresh();
+      expect(unfiltered).toHaveLength(6);
+    } finally {
+      storageMock.getHideOnDemandInLive.mockReturnValue(true);
+    }
   });
 
   it('cross-checks alternate routes against the Player API Live catalog', async () => {
@@ -707,7 +804,7 @@ http://host:8080/movie/u1/p1/201.mp4`);
       url.includes('action=get_live_streams'))).toHaveLength(1);
   });
 
-  it('does not filter movie and series paths from an ordinary M3U', async () => {
+  it('filters movie and series paths from an ordinary M3U unless asked not to', async () => {
     storageMock.getPlaylists.mockReturnValue([
       { id: 'm', name: 'M3U', url: 'http://host/list.m3u', source: 'url' },
     ]);
@@ -717,9 +814,15 @@ http://host/movie/u1/p1/201.mp4
 #EXTINF:-1,Bravo
 http://host/series/u1/p1/301.mkv`);
 
-    const channels = await PlaylistService.refresh();
+    expect(await PlaylistService.refresh()).toEqual([]);
 
-    expect(channels.map(channel => channel.name)).toEqual(['Alpha', 'Bravo']);
+    storageMock.getHideOnDemandInLive.mockReturnValue(false);
+    try {
+      const channels = await PlaylistService.refresh();
+      expect(channels.map(channel => channel.name)).toEqual(['Alpha', 'Bravo']);
+    } finally {
+      storageMock.getHideOnDemandInLive.mockReturnValue(true);
+    }
   });
 
   it('does not request live categories when get.php returns channels', async () => {

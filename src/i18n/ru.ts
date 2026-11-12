@@ -572,4 +572,13 @@ export const RU_MESSAGES = {
   'liveCategories.loadError': 'Не удалось загрузить категории.',
   'liveCategories.tryAgain': 'Повторить',
   'liveCategories.settingsHint': 'Загружаются только выбранные категории. Чем их меньше, тем быстрее загрузка.',
+  'app.safeMode': 'В прошлый раз приложение неожиданно закрылось, поэтому загружен сокращённый список каналов.',
+  'app.channelLimit': 'Загружены первые {count} каналов. Выберите меньше категорий, чтобы увидеть остальные.',
+  'channel.allCountries': 'Все страны',
+  'settings.channelLayout': 'Вид каналов',
+  'settings.channelLayoutGrid': 'Сетка',
+  'settings.channelLayoutList': 'Список',
+  'settings.channelLayoutHint': 'Сетка показывает больше каналов сразу и что идёт сейчас. Список компактнее.',
+  'settings.hideOnDemand': 'Скрывать фильмы и сериалы в Эфире',
+  'settings.hideOnDemandHint': 'Многие плейлисты выдают каждый фильм и серию как канал. Если их скрыть, Эфир на телевизоре работает быстро и стабильно.',
 } satisfies MessageCatalog;

@@ -527,4 +527,13 @@ export const ZH_CN_MESSAGES = {
   'liveCategories.loadError': '无法加载分类。',
   'liveCategories.tryAgain': '重试',
   'liveCategories.settingsHint': '只加载选中的分类。分类越少，加载越快。',
+  'app.safeMode': '应用上次意外关闭，已加载较少的频道列表。',
+  'app.channelLimit': '已加载前 {count} 个频道。选择较少的分类即可查看其余频道。',
+  'channel.allCountries': '所有国家/地区',
+  'settings.channelLayout': '频道布局',
+  'settings.channelLayoutGrid': '网格',
+  'settings.channelLayoutList': '列表',
+  'settings.channelLayoutHint': '网格可同时显示更多频道及正在播出的节目。列表更紧凑。',
+  'settings.hideOnDemand': '在直播中隐藏电影和剧集',
+  'settings.hideOnDemandHint': '许多播放列表把每部电影和每一集都列为频道。隐藏它们可让直播在电视上保持流畅稳定。',
 } satisfies MessageCatalog;

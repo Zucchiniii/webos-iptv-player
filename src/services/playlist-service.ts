@@ -58,6 +58,7 @@ import {
   type XtreamGroupNameFilter,
 } from '../utils/xtream-category-filter';
 import { liveParentalRequest, ParentalControlService } from './parental-control';
+import { CONFIG } from '../config';
 
 const log = createLogger('Playlist');
 
@@ -121,6 +122,24 @@ function xtreamLivePlaylist(
   };
 }
 
+/** One shared membership array per distinct playlist set; channels replace,
+ *  never mutate, their `playlistIds`. */
+function sharedMembership(memberships: Map<string, string[]>, ids: string[]): string[] {
+  const key = ids.join('\n');
+  const known = memberships.get(key);
+  if (known) return known;
+  memberships.set(key, ids);
+  return ids;
+}
+
+function shareMemberships(channels: Channel[]): Channel[] {
+  const memberships = new Map<string, string[]>();
+  for (const channel of channels) {
+    channel.playlistIds = sharedMembership(memberships, channel.playlistIds);
+  }
+  return channels;
+}
+
 export interface ChannelCacheSource {
   record: CacheRecordRef;
   length: number;
@@ -148,8 +167,17 @@ class PlaylistServiceImpl {
   private groupsByPlaylist = new Map<string, string[]>();
   private groupKeyByDisplay = new Map<string, string>();
   // Channels sharing a key (one URL with other headers or DRM), in order.
-  private channelsByKey = new Map<string, Channel[]>();
-  private channelByLegacyKey = new Map<string, Channel | null>();
+  // Most keys name one channel; an array only where several share it, so a
+  // 100k-channel list doesn't hold 100k one-element arrays.
+  private channelsByKey = new Map<string, Channel | Channel[]>();
+  // Built on first use: only migrating pre-1.x favorites ever reads it.
+  private channelByLegacyKey: Map<string, Channel | null> | null = null;
+  private loadLimits: { maxChannels: number; skipCache: boolean } = {
+    maxChannels: CONFIG.MAX_LIVE_CHANNELS,
+    skipCache: false,
+  };
+  /** True when the last load stopped at the live channel limit. */
+  channelLimitReached = false;
   private channelSearchIndex: PreparedSearchItem<Channel>[] = [];
   private channelSearchByPlaylist = new Map<string, PreparedSearchItem<Channel>[]>();
   private indexedChannels: Channel[] | null = null;
@@ -262,13 +290,20 @@ class PlaylistServiceImpl {
     this.groupsByPlaylist = new Map();
     this.groupKeyByDisplay = new Map();
     this.channelsByKey = new Map();
-    this.channelByLegacyKey = new Map();
+    this.channelByLegacyKey = null;
     this.channelSearchIndex = [];
     this.channelSearchByPlaylist = new Map();
     this.indexedChannels = null;
     this.indexedChannelCount = -1;
     this.searchIndexedChannels = null;
     this.searchIndexedChannelCount = -1;
+  }
+
+  /** Safe mode bounds the list and skips a cached list that may itself be too big. */
+  setSafeMode(safe: boolean): void {
+    this.loadLimits = safe
+      ? { maxChannels: CONFIG.SAFE_MODE_MAX_LIVE_CHANNELS, skipCache: true }
+      : { maxChannels: CONFIG.MAX_LIVE_CHANNELS, skipCache: false };
   }
 
   async load(onProgress?: (progress: PlaylistLoadProgress) => void): Promise<Channel[]> {
@@ -281,20 +316,21 @@ class PlaylistServiceImpl {
     }
     // Boot from an expired cache too; App schedules the overdue refresh in the
     // background instead of blocking startup on a full download.
-    const cached = await getCachedPlaylist(null);
+    const cached = this.loadLimits.skipCache ? null : await getCachedPlaylist(null);
     if (cached) {
       this.failedSourceIds.clear();
       this.refreshTimestamp = cached.timestamp;
       const channelsNeedFiltering = cached.channels
         .some(channel => channel.playlistIds.some(id => !enabledIds.has(id)));
-      this.allChannels = channelsNeedFiltering
+      this.allChannels = shareMemberships(channelsNeedFiltering
         ? cached.channels
             .map(channel => ({
               ...channel,
               playlistIds: channel.playlistIds.filter(id => enabledIds.has(id)),
             }))
             .filter(channel => channel.playlistIds.length > 0)
-        : cached.channels;
+        : cached.channels);
+      this.channelLimitReached = false;
       const epgSourcesNeedFiltering = cached.epgSources
         .some(source => source.playlistIds.some(id => !enabledIds.has(id)));
       this.epgSources = epgSourcesNeedFiltering
@@ -333,6 +369,9 @@ class PlaylistServiceImpl {
 
     const allChannels: Channel[] = [];
     const byUrl = new Map<string, Channel>();
+    const memberships = new Map<string, string[]>();
+    const dropOnDemand = StorageService.getHideOnDemandInLive();
+    let limitReached = false;
     const epgSources: EpgSource[] = [];
     let failedPlaylists = 0;
     const failedSourceIds = new Set<string>();
@@ -442,6 +481,18 @@ class PlaylistServiceImpl {
         );
       }
       const plDone = log.time(`fetch '${pl.name || pl.url}'`);
+      const remaining = this.loadLimits.maxChannels - allChannels.length;
+      if (remaining <= 0) {
+        limitReached = true;
+        log.warn(
+          'Live channel limit reached; skipping source',
+          'event=playlist.channel_limit.skipped',
+          `load=${String(load)}`,
+          `limit=${String(this.loadLimits.maxChannels)}`,
+        );
+        plDone();
+        continue;
+      }
       try {
         let parsed: ParsedPlaylist | null = null;
         let playlistError: unknown;
@@ -463,8 +514,18 @@ class PlaylistServiceImpl {
               });
             },
             xtreamGroupFilter,
+            { dropOnDemand, maxChannels: remaining },
           );
           parsed = loaded.data;
+          if (loaded.data.issues.some(issue => issue.code === 'channel-limit')) {
+            limitReached = true;
+            log.warn(
+              'Live channel limit reached',
+              'event=playlist.channel_limit.reached',
+              `load=${String(load)}`,
+              `limit=${String(this.loadLimits.maxChannels)}`,
+            );
+          }
         } catch (err) {
           playlistError = err;
           if (!xtreamCredentials) throw err;
@@ -541,10 +602,15 @@ class PlaylistServiceImpl {
             // Same stream in an earlier playlist: keep the one channel object
             // (so "All" stays de-duplicated), but record this playlist too so
             // its own tab still appears and shows the channel.
-            if (!existing.playlistIds.includes(plKey)) existing.playlistIds.push(plKey);
+            if (!existing.playlistIds.includes(plKey)) {
+              existing.playlistIds = sharedMembership(
+                memberships,
+                existing.playlistIds.concat(plKey),
+              );
+            }
             dupes++;
           } else {
-            ch.playlistIds = [plKey];
+            ch.playlistIds = sharedMembership(memberships, [plKey]);
             byUrl.set(identity, ch);
             allChannels.push(ch);
             added++;
@@ -622,6 +688,7 @@ class PlaylistServiceImpl {
     }
     const refreshTimestamp = Date.now();
     this.allChannels = allChannels;
+    this.channelLimitReached = limitReached;
     this.epgSources = epgSources;
     // Customization preserves source names/groups on each channel, so cached
     // channels can be re-customized after an edit without another network load.
@@ -810,7 +877,7 @@ class PlaylistServiceImpl {
     this.channelsByPlaylistGroup = new Map();
     this.groupKeyByDisplay = new Map();
     this.channelsByKey = new Map();
-    this.channelByLegacyKey = new Map();
+    this.channelByLegacyKey = null;
     this.channelSearchIndex = [];
     this.channelSearchByPlaylist = new Map();
     this.searchIndexedChannels = null;
@@ -824,13 +891,10 @@ class PlaylistServiceImpl {
       const ch = this.channels[i];
       this.indexMap.set(ch, i);
       const key = channelKey(ch);
-      this.appendIndexed(this.channelsByKey, key, ch);
-      // A legacy key is ambiguous only across different streams, not across
-      // entries that share one channelKey.
-      const legacyKey = legacyChannelKey(ch);
-      const legacy = this.channelByLegacyKey.get(legacyKey);
-      if (legacy === undefined) this.channelByLegacyKey.set(legacyKey, ch);
-      else if (legacy && channelKey(legacy) !== key) this.channelByLegacyKey.set(legacyKey, null);
+      const keyed = this.channelsByKey.get(key);
+      if (keyed === undefined) this.channelsByKey.set(key, ch);
+      else if (Array.isArray(keyed)) keyed.push(ch);
+      else this.channelsByKey.set(key, [keyed, ch]);
       if (ch.group) {
         groupSet.add(ch.group);
         if (!this.groupKeyByDisplay.has(ch.group)) {
@@ -868,6 +932,26 @@ class PlaylistServiceImpl {
     this.indexedChannels = this.channels;
     this.indexedChannelCount = this.channels.length;
     this.groupsRevision++;
+  }
+
+  private keyedChannels(key: string): Channel[] {
+    const keyed = this.channelsByKey.get(key);
+    return keyed === undefined ? [] : Array.isArray(keyed) ? keyed : [keyed];
+  }
+
+  private legacyKeyIndex(): Map<string, Channel | null> {
+    if (this.channelByLegacyKey) return this.channelByLegacyKey;
+    const index = new Map<string, Channel | null>();
+    for (const ch of this.channels) {
+      // A legacy key is ambiguous only across different streams, not across
+      // entries that share one channelKey.
+      const legacyKey = legacyChannelKey(ch);
+      const legacy = index.get(legacyKey);
+      if (legacy === undefined) index.set(legacyKey, ch);
+      else if (legacy && channelKey(legacy) !== channelKey(ch)) index.set(legacyKey, null);
+    }
+    this.channelByLegacyKey = index;
+    return index;
   }
 
   private appendIndexed<T>(map: Map<string, T[]>, key: string, channel: T): void {
@@ -932,8 +1016,8 @@ class PlaylistServiceImpl {
     if (group === 'builtin:all' || group === 'builtin:recently-watched') return all;
     if (group === 'builtin:favorites') {
       const favorites = StorageService.getFavorites()
-        .map(key => this.channelsByKey.get(key)
-          ?.find(channel => !playlist || channel.playlistIds.includes(playlist)))
+        .map(key => this.keyedChannels(key)
+          .find(channel => !playlist || channel.playlistIds.includes(playlist)))
         .filter((channel): channel is Channel => !!channel);
       favorites.sort((a, b) => this.indexOf(a) - this.indexOf(b));
       return favorites;
@@ -1009,7 +1093,7 @@ class PlaylistServiceImpl {
     exactStream?: string,
   ): { channel: Channel; channelIndex: number } | null {
     this.ensureDerivedIndexes();
-    const shared = this.channelsByKey.get(key) ?? [];
+    const shared = this.keyedChannels(key);
     const same = stream
       ? shared.filter(channel => channelStreamIdentity(channel) === stream)
       : [];
@@ -1018,7 +1102,7 @@ class PlaylistServiceImpl {
       : [];
     const pick = (list: Channel[]) => (prefer && list.find(prefer)) || list[0];
     const channel = pick(exact) ?? pick(same) ?? pick(shared)
-      ?? this.channelByLegacyKey.get(key);
+      ?? this.legacyKeyIndex().get(key);
     if (!channel) return null;
     const channelIndex = this.indexOf(channel);
     return channelIndex < 0 ? null : { channel, channelIndex };

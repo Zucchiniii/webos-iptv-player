@@ -542,4 +542,13 @@ export const DE_MESSAGES = {
   'liveCategories.loadError': 'Kategorien konnten nicht geladen werden.',
   'liveCategories.tryAgain': 'Erneut versuchen',
   'liveCategories.settingsHint': 'Nur ausgewählte Kategorien werden geladen. Weniger Kategorien laden schneller.',
+  'app.safeMode': 'Die App wurde zuletzt unerwartet beendet, daher wurde eine kleinere Senderliste geladen.',
+  'app.channelLimit': 'Die ersten {count} Sender wurden geladen. Wählen Sie weniger Kategorien, um den Rest zu sehen.',
+  'channel.allCountries': 'Alle Länder',
+  'settings.channelLayout': 'Senderansicht',
+  'settings.channelLayoutGrid': 'Raster',
+  'settings.channelLayoutList': 'Liste',
+  'settings.channelLayoutHint': 'Das Raster zeigt mehr Sender auf einmal mit dem laufenden Programm. Die Liste ist kompakt.',
+  'settings.hideOnDemand': 'Filme und Serien in Live ausblenden',
+  'settings.hideOnDemandHint': 'Viele Wiedergabelisten führen jeden Film und jede Folge als Sender. Ausgeblendet bleibt Live auf dem Fernseher schnell und stabil.',
 } satisfies MessageCatalog;

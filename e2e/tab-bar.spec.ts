@@ -178,11 +178,13 @@ test('M3U-only shows a docked bar with Live/Guide/Settings/Search only (no Movie
   await expect(page.locator('body.tabbar-docked')).toHaveCount(1);
 
   // With no Xtream account the account slot is empty and collapses, so the
-  // search magnifier stays flush against the bar's right edge (no dangling gap).
+  // clock beside the magnifier stays flush against the bar's right edge.
   await expect(page.locator('.account-avatar')).toHaveCount(0);
   const inner = (await page.locator('.tab-bar-inner').boundingBox())!;
   const icon = (await page.locator('.tab-bar-search .search-icon').boundingBox())!;
-  expect((inner.x + inner.width) - (icon.x + icon.width)).toBeLessThan(4);
+  const clock = (await page.locator('.tab-bar-clock').boundingBox())!;
+  expect((inner.x + inner.width) - (clock.x + clock.width)).toBeLessThan(4);
+  expect(icon.x + icon.width).toBeLessThan(clock.x);
 });
 
 test('no playlist or account configured shows Live/Guide/Settings/Search only (no Movies/Series)', async ({ page }) => {
@@ -226,7 +228,7 @@ function tokenColor(page: import('@playwright/test').Page, token: string): Promi
   }, token);
 }
 
-test('the Search magnifier rests bare and draws the focus circle on hover and D-pad focus', async ({ page }) => {
+test('the Search magnifier rests as quiet glass and draws the focus ring on hover and D-pad focus', async ({ page }) => {
   await seedXtream(page);
   await routeLiveManifest(page);
   await page.goto('/');
@@ -238,14 +240,14 @@ test('the Search magnifier rests bare and draws the focus circle on hover and D-
     return { border: s.borderTopColor, shadow: s.boxShadow, transform: s.transform };
   });
   const rest = await look();
-  expect(rest.border).toBe('rgba(0, 0, 0, 0)');
+  const ring = await tokenColor(page, '--focus-ring');
+  expect(rest.border).not.toBe(ring);
   expect(rest.shadow).toBe('none');
   // Its parent must not clip the glow.
   expect(await page.locator('.tab-bar-search').evaluate((el) => getComputedStyle(el).overflow)).toBe('visible');
 
   const box = (await icon.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  const ring = await tokenColor(page, '--focus-ring');
   await expect.poll(async () => (await look()).border).toBe(ring);
   const hover = await look();
   expect(hover.shadow).not.toBe('none');
@@ -265,43 +267,44 @@ test('the Search magnifier rests bare and draws the focus circle on hover and D-
   expect((await look()).transform).toBe('none');
 });
 
-test('a hovered text tab brightens to the active tab color', async ({ page }) => {
+test('a hovered text tab takes the inverted focus pill', async ({ page }) => {
   await seedXtream(page);
   await routeLiveManifest(page);
   await page.goto('/');
   await expect(page.locator('#view-channels')).toBeVisible();
 
-  const color = (section: string) => page.locator(`.tab-bar-item[data-section="${section}"]`)
-    .evaluate((el) => getComputedStyle(el).color);
-  const active = await color('live');
-  expect(await color('movies')).not.toBe(active);
+  const look = (section: string) => page.locator(`.tab-bar-item[data-section="${section}"]`)
+    .evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { color: s.color, background: s.backgroundColor };
+    });
+  const pill = {
+    color: await tokenColor(page, '--bg-primary'),
+    background: await tokenColor(page, '--text-primary'),
+  };
+  expect(await look('movies')).not.toEqual(pill);
   const box = (await page.locator('.tab-bar-item[data-section="movies"]').boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await expect.poll(() => color('movies')).toBe(active);
+  await expect.poll(() => look('movies')).toEqual(pill);
 });
 
-test('the open Search shows the text tabs\' accent underline under the magnifier', async ({ page }) => {
+test('the open Search marks the magnifier as the active section', async ({ page }) => {
   await seedXtream(page);
   await routeLiveManifest(page);
   await page.goto('/');
   await expect(page.locator('#view-channels')).toBeVisible();
 
   const icon = page.locator('.tab-bar-search .search-icon');
-  const underline = () => icon.evaluate((el) => getComputedStyle(el, '::after').content);
-  expect(await underline()).toBe('none');
+  const fill = () => icon.evaluate((el) => getComputedStyle(el).backgroundColor);
+  const rest = await fill();
 
   await enterTab(page, 'search');
   await expect(page.locator('.tab-bar-search.expanded')).toBeVisible();
-  await page.mouse.move(960, 1070); // off the icon, so hover doesn't hide the underline
-  await expect.poll(underline).not.toBe('none');
-  expect(await icon.evaluate((el) => getComputedStyle(el, '::after').backgroundColor))
-    .toBe(await tokenColor(page, '--accent'));
-  // Only the straight bar: the circle's own border stays clear.
-  await expect.poll(() => icon.evaluate((el) => getComputedStyle(el).borderBottomColor)).toBe('rgba(0, 0, 0, 0)');
-  // The underline sits on the same baseline as the text tabs' underline.
-  const iconBottom = (await icon.boundingBox())!;
-  const tab = (await page.locator('.tab-bar-item[data-section="live"]').boundingBox())!;
-  expect(Math.abs((iconBottom.y + iconBottom.height) - (tab.y + tab.height))).toBeLessThanOrEqual(1.5);
+  await page.mouse.move(960, 1070); // off the icon, so hover doesn't take over
+  await expect.poll(fill).not.toBe(rest);
+  // A selection, not focus: no ring.
+  expect(await icon.evaluate((el) => getComputedStyle(el).borderTopColor))
+    .not.toBe(await tokenColor(page, '--focus-ring'));
 });
 
 test('switching to the D-pad drops a resting pointer\'s hover circle on the magnifier', async ({ page }) => {
@@ -315,6 +318,7 @@ test('switching to the D-pad drops a resting pointer\'s hover circle on the magn
     const s = getComputedStyle(el);
     return { border: s.borderTopColor, shadow: s.boxShadow };
   });
+  const rest = await look();
   const box = (await icon.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await expect.poll(async () => (await look()).border).toBe(await tokenColor(page, '--focus-ring'));
@@ -322,7 +326,7 @@ test('switching to the D-pad drops a resting pointer\'s hover circle on the magn
   // The pointer stays put while the D-pad moves focus into the list.
   await page.keyboard.press('ArrowDown');
   await expect.poll(async () => (await look()).shadow).toBe('none');
-  expect((await look()).border).toBe('rgba(0, 0, 0, 0)');
+  expect((await look()).border).toBe(rest.border);
 
   // Moving the pointer brings the hover look back.
   await page.mouse.move(box.x + box.width / 2 + 2, box.y + box.height / 2);

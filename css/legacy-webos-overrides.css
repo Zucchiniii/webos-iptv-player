@@ -32,7 +32,6 @@
  * rule is both more specific and linked later — so on a gap-less engine it
  * replaces the gap instead of adding to it. Restate the sums.
  */
-html.q-no-flex-gap .tab-bar-inner > .tab-bar-account { margin-left: 52px; }
 html.q-no-flex-gap .epg-prog-title > .epg-bell-glyph { margin-left: 18px; }
 html.q-no-flex-gap .settings-field > .settings-item-hint { margin-top: 14px; }
 html.q-no-flex-gap .live-preview-favorite { margin-right: 20px; }
@@ -105,7 +104,7 @@ html.q-scroll-end-padding .catalog-category-rail::after { content: none; }
   .settings-view > .settings-sidebar {
     -webkit-flex: 0 0 auto;
     flex: 0 0 auto;
-    margin-right: 32px;
+    margin-right: 40px;
   }
   .settings-view > .settings-main {
     -webkit-box-flex: 1;
@@ -127,11 +126,11 @@ html.q-scroll-end-padding .catalog-category-rail::after { content: none; }
   .theme-swatch-grid > .theme-swatch {
     -webkit-box-sizing: border-box;
     box-sizing: border-box;
-    -webkit-flex: 0 0 calc((100% - 72px) / 5);
-    flex: 0 0 calc((100% - 72px) / 5);
+    -webkit-flex: 0 0 calc((100% - 54px) / 4);
+    flex: 0 0 calc((100% - 54px) / 4);
     margin: 0 18px 18px 0;
   }
-  .theme-swatch-grid > .theme-swatch:nth-child(5n) {
+  .theme-swatch-grid > .theme-swatch:nth-child(4n) {
     margin-right: 0;
   }
 
