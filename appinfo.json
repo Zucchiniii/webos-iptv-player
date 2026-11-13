@@ -1,14 +1,14 @@
 {
   "id": "com.lennylxx.iptv",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "vendor": "Zucchiniii",
   "type": "web",
   "main": "index.html",
   "title": "webOS IPTV Player",
   "appDescription": "IPTV player with M3U, Xtream, XMLTV, and catch-up.",
-  "icon": "icon-grid.png",
-  "largeIcon": "largeIcon-grid.png",
-  "iconColor": "#4f7dff",
+  "icon": "icon-neon.png",
+  "largeIcon": "largeIcon-neon.png",
+  "iconColor": "#241e52",
   "resolution": "1920x1080",
   "disableBackHistoryAPI": true,
   "transparent": false

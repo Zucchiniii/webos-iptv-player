@@ -31,8 +31,10 @@ try {
 }
 
 const inner = svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
-await writeFile(join(ASSETS, 'icon-rounded.svg'), `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 512 512">
-  <clipPath id="tile"><rect width="512" height="512" rx="112"/></clipPath>
+const [, , width, height] = (/viewBox="([^"]+)"/.exec(svg)?.[1] ?? '0 0 512 512').split(/\s+/).map(Number);
+const radius = Math.round(width * 0.22 * 100) / 100;
+await writeFile(join(ASSETS, 'icon-rounded.svg'), `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 ${width} ${height}">
+  <clipPath id="tile"><rect width="${width}" height="${height}" rx="${radius}"/></clipPath>
   <g clip-path="url(#tile)">${inner}</g>
 </svg>
 `);

@@ -40,8 +40,9 @@ your playlists, favorites, and settings. Prefer the command line? See
   focused channel's full name, what's on with its time and progress, the program description,
   and what's next. Rows no longer slide their text back and forth. In Live, card names and the
   header's name and title wrap onto two lines instead of being cut off.
-- **New app icon**: a channel grid, the first tile with a play button, matching the in-app logo;
-  plus a Homebrew Channel page that describes the app and links here.
+- **Refreshed app icon**: the original's gradient ring and play button, simplified, and the same
+  everywhere (TV home screen, Homebrew Channel, in-app logo); plus a Homebrew Channel page that
+  describes the app and links here.
 - **Fixed:** a thin strip of the hidden group panel showed at the screen's left edge while
   watching.
 
