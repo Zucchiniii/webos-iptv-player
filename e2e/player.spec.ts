@@ -56,7 +56,7 @@ test('remote arrow keys move focus and Enter starts playback', async ({ page }) 
   await expect(page.locator('#view-player')).toBeVisible();
 });
 
-test('live playback retries the current channel before switching', async ({ page }) => {
+test('live playback keeps retrying the current channel instead of switching', async ({ page }) => {
   await neuterVideo(page);
   await routePlaylist(page);
   await seedPlaylist(page);
@@ -82,8 +82,11 @@ test('live playback retries the current channel before switching', async ({ page
   await expect(video).not.toHaveAttribute('data-original-stream', 'true');
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('iptv_last_channel')!).index)).toBe(0);
   await video.dispatchEvent('error');
-  await expect.poll(() =>
-    page.evaluate(() => JSON.parse(localStorage.getItem('iptv_last_channel')!).index)).toBe(1);
+  // Recovery exhausted: the channel stays on screen with a retry message.
+  await expect(page.locator('#player-osd')).toContainText('Playback error — retrying. Press OK to try now.');
+  await expect(page.locator('.osd-channel-name')).toHaveText('Channel One');
+  await page.waitForTimeout(2500);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('iptv_last_channel')!).index)).toBe(0);
 });
 
 test('player sidebar focuses the playing channel; search still filters', async ({ page }) => {

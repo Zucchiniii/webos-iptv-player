@@ -1041,7 +1041,10 @@ describe('Player live playback', () => {
     expect(reload).not.toHaveBeenCalled();
     expect(warn.mock.calls.map(args => args.join(' ')).join('\n'))
       .not.toContain('event=playback.proxy.reopen');
-    expect(playlistMock.getByIndex).toHaveBeenCalledWith(1);
+    // The failed channel stays on and is retried, never left for the next one.
+    vi.advanceTimersByTime(CONFIG.PLAYER.FAILED_RETRY_BASE_MS);
+    expect(playlistMock.getByIndex).toHaveBeenCalledWith(0);
+    expect(playlistMock.getByIndex).not.toHaveBeenCalledWith(1);
     expect(error.mock.calls.map(args => args.join(' ')).join('\n'))
       .toMatch(/event=playback\.recovery\.exhausted .*chain=unstarted/);
   });
@@ -1092,7 +1095,9 @@ describe('Player live playback', () => {
     vi.advanceTimersByTime(2000);
 
     expect(container.querySelector('video')).toBe(video);
-    expect(playlistMock.getByIndex).toHaveBeenCalledWith(1);
+    vi.advanceTimersByTime(CONFIG.PLAYER.FAILED_RETRY_BASE_MS);
+    expect(playlistMock.getByIndex).toHaveBeenCalledWith(0);
+    expect(playlistMock.getByIndex).not.toHaveBeenCalledWith(1);
     expect(error.mock.calls.map(args => args.join(' ')).join('\n'))
       .toMatch(/event=playback\.recovery\.exhausted .*cause=error .*chain=unstarted/);
   });
@@ -1114,8 +1119,9 @@ describe('Player live playback', () => {
       expect(warn.mock.calls.map(args => args.join(' ')).join('\n'))
         .not.toContain('event=playback.recovery.reload');
       expect(error.mock.calls.map(args => args.join(' ')).join('\n')
-        .match(/event=playback\.video\.error/g)).toHaveLength(1);
-      expect(playlistMock.getByIndex).toHaveBeenCalledWith(1);
+        .match(/event=playback\.video\.error/g)?.length).toBeGreaterThanOrEqual(1);
+      expect(playlistMock.getByIndex).toHaveBeenCalledWith(0);
+      expect(playlistMock.getByIndex).not.toHaveBeenCalledWith(1);
     } finally {
       vi.mocked(StorageService.getHeaderPlayback).mockReturnValue('off');
     }
@@ -1170,7 +1176,9 @@ describe('Player live playback', () => {
     vi.advanceTimersByTime(CONFIG.PLAYER.STALL_POLL_MS * (CONFIG.PLAYER.STALL_FREEZE_TICKS + 1));
 
     expect(reload).not.toHaveBeenCalled();
-    expect(playlistMock.getByIndex).toHaveBeenCalledWith(1);
+    vi.advanceTimersByTime(CONFIG.PLAYER.FAILED_RETRY_BASE_MS);
+    expect(playlistMock.getByIndex).toHaveBeenCalledWith(0);
+    expect(playlistMock.getByIndex).not.toHaveBeenCalledWith(1);
     expect(error.mock.calls.map(args => args.join(' ')).join('\n'))
       .toMatch(/event=playback\.recovery\.exhausted .*cause=stall .*chain=unstarted/);
   });
@@ -1202,7 +1210,7 @@ describe('Player live playback', () => {
     expect(playlistMock.getByIndex).not.toHaveBeenCalled();
   });
 
-  it('coalesces errors and reconnects the same channel before advancing', async () => {
+  it('coalesces errors and reconnects the same channel before holding it for a retry', async () => {
     playlistMock.channels = [{}, {}];
     HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
     HTMLMediaElement.prototype.pause = vi.fn();
@@ -1239,8 +1247,11 @@ describe('Player live playback', () => {
     third.dispatchEvent(new Event('error'));
     vi.advanceTimersByTime(2000);
 
+    // Recovery exhausted: the channel stays, then is tuned again.
+    expect(playlistMock.getByIndex).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(CONFIG.PLAYER.FAILED_RETRY_BASE_MS);
     expect(playlistMock.getByIndex).toHaveBeenCalledTimes(1);
-    expect(playlistMock.getByIndex).toHaveBeenCalledWith(1);
+    expect(playlistMock.getByIndex).toHaveBeenCalledWith(0);
     expect(healthMock.recordPlaybackFailure).toHaveBeenCalledOnce();
     expect(healthMock.recordPlaybackFailure)
       .toHaveBeenCalledWith(CHANNEL, 'playback_error');
@@ -1277,6 +1288,41 @@ describe('Player live playback', () => {
     expect(healthMock.recordPlaybackFailure).toHaveBeenCalledOnce();
   });
 
+  it('holds a failed channel, retries with growing waits, and lets OK retry now', async () => {
+    playlistMock.channels = [{}, {}];
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    player.play(0);
+    await flush();
+    const fail = () => {
+      Object.defineProperty(video, 'error', { configurable: true, value: { code: 4, message: '' } });
+      (player as unknown as { onError(reason?: 'unsupported'): void }).onError('unsupported');
+    };
+    playlistMock.getByIndex.mockClear();
+    fail();
+    expect(container.querySelector('#player-osd')?.textContent)
+      .toContain('Playback error — retrying. Press OK to try now.');
+    vi.advanceTimersByTime(CONFIG.PLAYER.FAILED_RETRY_BASE_MS - 1);
+    expect(playlistMock.getByIndex).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(playlistMock.getByIndex).toHaveBeenLastCalledWith(0);
+
+    // Failing again waits twice as long.
+    playlistMock.getByIndex.mockClear();
+    fail();
+    vi.advanceTimersByTime(CONFIG.PLAYER.FAILED_RETRY_BASE_MS * 2 - 1);
+    expect(playlistMock.getByIndex).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(playlistMock.getByIndex).toHaveBeenLastCalledWith(0);
+
+    // OK tries at once instead of waiting.
+    playlistMock.getByIndex.mockClear();
+    fail();
+    player.handleAction('select');
+    expect(playlistMock.getByIndex).toHaveBeenLastCalledWith(0);
+    expect(playlistMock.getByIndex).not.toHaveBeenCalledWith(1);
+  });
+
   it('says HTTP headers are off when a channel that needed them fails', async () => {
     playlistMock.channels = [{}, {}];
     player.play(0);
@@ -1288,7 +1334,7 @@ describe('Player live playback', () => {
     video.dispatchEvent(new Event('error'));
 
     expect(container.querySelector('#player-osd')?.textContent)
-      .toContain('Playback error — HTTP headers are off. Trying the next channel…');
+      .toContain('Playback error — HTTP headers are off. Retrying; press OK to try now.');
   });
 
   it('cancels a pending reconnect when the user changes channel or stops', async () => {

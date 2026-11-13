@@ -51,6 +51,10 @@ export const CONFIG = {
     EDGE_SCROLL_PARK_POLL_MS: 150,
   },
   PLAYER: {
+    // A failed live channel stays on screen and is retried, doubling the
+    // wait from the base up to the cap, so a dropped connection resumes.
+    FAILED_RETRY_BASE_MS: 5000,
+    FAILED_RETRY_MAX_MS: 30000,
     LIVE_PREVIEW_UPCOMING_COUNT: 4,
     LIVE_PREVIEW_REFRESH_MS: 1000,
     DEFAULT_PLAYER_OSD_TIMEOUT_MS: 5000,

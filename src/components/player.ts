@@ -125,6 +125,10 @@ export class Player {
   private liveHistoryGeneration = -1;
   private liveHistoryTimer: ReturnType<typeof setTimeout> | null = null;
   private errorAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
+  // The channel being held after a failure, and how many retries it has had.
+  private failedIndex = -1;
+  private failedRetries = 0;
+  private failedHold = false;
   private errorRetryPending = false;
   // Manual A/V resync (catch-up / VOD): true from the resync seek until playback
   // resumes, gating the "Resyncing…" message and debouncing repeat presses.
@@ -269,14 +273,13 @@ export class Player {
         this.reloadCurrentStream();
       },
       onEscalate: recovery => {
-        log.error('Live stream recovery exhausted; advancing channel',
+        log.error('Live stream recovery exhausted; holding the channel for a retry',
           'event=playback.recovery.exhausted', this.playbackLabel(),
           `cause=${recovery.cause}`,
           this.recoveryState(recovery),
           ...(this.chainUnstarted() ? ['chain=unstarted'] : []));
         this.markLiveUnavailable(recovery.cause === 'stall' ? 'stall_exhausted' : 'playback_error');
-        this.osd.updateMessage(this.streamErrorMessage());
-        this.channelUp();
+        this.holdFailedChannel();
       },
       // A step that hangs is the startup watchdog's to escalate.
       holdStall: recovery => this.holdStallForLuna(recovery)
@@ -408,6 +411,9 @@ export class Player {
       this.startupPending = false;
       this.notePlayed();
       this.pipeline.notePlaying();
+      // A channel that plays again starts its retry backoff over.
+      this.failedRetries = 0;
+      this.failedHold = false;
       const recovered = this.errorRetryPending;
       if (recovered) {
         this.cancelErrorAdvance();
@@ -1382,13 +1388,41 @@ export class Player {
       }, 2000);
       return;
     }
-    this.stallWatchdog.stop();
     this.markLiveUnavailable('playback_error');
+    this.holdFailedChannel();
+  }
+
+  // A failed channel stays on screen and is tried again, waiting longer each
+  // time up to a cap, instead of jumping to the next channel: a dropped
+  // connection otherwise threw the viewer off what they chose. OK retries at
+  // once; channel up/down still moves on whenever the viewer wants.
+  private holdFailedChannel(): void {
+    this.stallWatchdog.stop();
+    if (this.currentIndex !== this.failedIndex) {
+      this.failedIndex = this.currentIndex;
+      this.failedRetries = 0;
+    }
+    const delay = Math.min(
+      CONFIG.PLAYER.FAILED_RETRY_MAX_MS,
+      CONFIG.PLAYER.FAILED_RETRY_BASE_MS * Math.pow(2, this.failedRetries),
+    );
+    this.failedRetries++;
+    this.failedHold = true;
+    this.livePlaybackStatus = 'error';
+    this.onPlaybackStateChanged();
     this.osd.updateMessage(this.streamErrorMessage());
+    log.warn('Holding a failed channel for a retry', 'event=playback.failed.hold',
+      this.playbackLabel(), `attempt=${String(this.failedRetries)}`, `retryMs=${String(delay)}`);
     this.errorAdvanceTimer = setTimeout(() => {
       this.errorAdvanceTimer = null;
-      this.channelUp();
-    }, 2000);
+      this.retryFailedChannel();
+    }, delay);
+  }
+
+  private retryFailedChannel(): void {
+    this.failedHold = false;
+    if (this.currentIndex < 0) return;
+    this.play(this.currentIndex, this.catchupInfo ?? undefined);
   }
 
   private streamErrorMessage(): string {
@@ -2020,6 +2054,13 @@ export class Player {
         this.onBack();
         break;
       case 'select':
+        // A failed channel waiting for its next try: OK tries it now.
+        if (this.failedHold && this.errorAdvanceTimer !== null) {
+          clearTimeout(this.errorAdvanceTimer);
+          this.errorAdvanceTimer = null;
+          this.retryFailedChannel();
+          break;
+        }
         {
           const pointer = this.osd.pointerPosition();
           if (this.osd.seekAtPointer(pointer.x, pointer.y)) break;
