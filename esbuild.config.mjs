@@ -61,8 +61,8 @@ transformStylesheets('dist/css');
 // The TV's home screen caches app icons by file name and keeps showing the
 // old art after an update. Give the icons a new name (here and in
 // appinfo.json) whenever their art changes.
-cpSync('assets/icon80.png', 'dist/icon-play.png');
-cpSync('assets/icon130.png', 'dist/largeIcon-play.png');
+cpSync('assets/icon80.png', 'dist/icon-grid.png');
+cpSync('assets/icon130.png', 'dist/largeIcon-grid.png');
 cpSync('assets/group-icons', 'dist/assets/group-icons', { recursive: true });
 cpSync('assets/icons', 'dist/assets/icons', { recursive: true });
 cpSync('assets/fonts', 'dist/assets/fonts', { recursive: true });
