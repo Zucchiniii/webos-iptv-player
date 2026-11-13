@@ -2,9 +2,9 @@
 //
 //   node scripts/build-icons.mjs
 //
-// icon80.png and icon130.png (appinfo `icon` / `largeIcon`, and the Homebrew
-// Channel listing) are full-bleed squares: the TV's launcher rounds its own
-// tiles. icon-rounded.svg is the same art with the corners rounded, for the
+// icon80.png and icon130.png (appinfo `icon` / `largeIcon`, copied under a
+// cache-busting name by esbuild.config.mjs, and the Homebrew Channel
+// listing) are full-bleed squares: the TV's launcher rounds its own tiles. icon-rounded.svg is the same art with the corners rounded, for the
 // README. Headless Chromium does the rasterizing, so no SVG tool is needed.
 
 import { chromium } from '@playwright/test';

@@ -58,8 +58,11 @@ const sourceStylesheets = linkedStylesheets(indexHtml, readdirSync('css'), GENER
 writeFileSync(`css/${GENERATED_STYLESHEET}`, generateFlexGapFallback(sourceStylesheets));
 cpSync('css', 'dist/css', { recursive: true });
 transformStylesheets('dist/css');
-cpSync('assets/icon80.png', 'dist/icon.png');
-cpSync('assets/icon130.png', 'dist/largeIcon.png');
+// The TV's home screen caches app icons by file name and keeps showing the
+// old art after an update. Give the icons a new name (here and in
+// appinfo.json) whenever their art changes.
+cpSync('assets/icon80.png', 'dist/icon-play.png');
+cpSync('assets/icon130.png', 'dist/largeIcon-play.png');
 cpSync('assets/group-icons', 'dist/assets/group-icons', { recursive: true });
 cpSync('assets/icons', 'dist/assets/icons', { recursive: true });
 cpSync('assets/fonts', 'dist/assets/fonts', { recursive: true });
