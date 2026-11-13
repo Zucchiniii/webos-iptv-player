@@ -18,7 +18,10 @@ const { channels, epgMock, recentMock, toastMock, healthMock, workerMock } = vi.
       makeChannel({ id: 'c', name: 'Charlie', group: 'Sports', playlistIds: ['PL2'] }),
     ] as Channel[],
     epgMock: {
-      nowPlaying: null as { title: string } | null,
+      nowPlaying: null as {
+        title: string; start: Date; stop: Date; description: string;
+      } | null,
+      upcoming: [] as { title: string; start: Date; stop: Date }[],
     },
     recentMock: {
       items: [] as RecentlyWatchedItem[],
@@ -64,6 +67,7 @@ vi.mock('../services/epg-service', () => ({
   EpgService: {
     findChannelId: () => epgMock.nowPlaying ? 'epg' : null,
     getNowPlaying: () => epgMock.nowPlaying,
+    getUpcoming: () => epgMock.upcoming,
   },
 }));
 
@@ -119,6 +123,7 @@ beforeEach(() => {
   recentMock.getItems.mockClear();
   recentMock.catchupInfo.mockReset();
   epgMock.nowPlaying = null;
+  epgMock.upcoming = [];
   toastMock.mockClear();
   healthMock.records = {};
   workerMock.failIndexes = false;
@@ -156,6 +161,17 @@ function finishOpening(): void {
   const event = new Event('transitionend', { bubbles: true });
   Object.defineProperty(event, 'propertyName', { value: 'transform' });
   el.dispatchEvent(event);
+}
+
+function peek(): HTMLElement {
+  return container.querySelector<HTMLElement>('.sidebar-peek')!;
+}
+
+function programme(title: string, description = ''): {
+  title: string; start: Date; stop: Date; description: string;
+} {
+  const now = Date.now();
+  return { title, description, start: new Date(now - 600000), stop: new Date(now + 1200000) };
 }
 
 function highlightSearch(): void {
@@ -489,44 +505,97 @@ describe('Sidebar', () => {
       expect(groupItems()[0].dataset.groupId).toBe('builtin:all');
     });
 
-    it('scrolls only channel names that overflow', () => {
-      sidebar.show();
-      const names = el.querySelectorAll<HTMLElement>('.ch-name');
-      const texts = el.querySelectorAll<HTMLElement>('.ch-name-text');
-      Object.defineProperty(names[0], 'offsetWidth', { value: 100, configurable: true });
-      Object.defineProperty(texts[0], 'offsetWidth', { value: 160, configurable: true });
-      Object.defineProperty(names[1], 'offsetWidth', { value: 100 });
-      Object.defineProperty(texts[1], 'offsetWidth', { value: 100 });
-
-      (sidebar as unknown as { measureMarquees: () => void }).measureMarquees();
+    it('clips long row text without animating it', () => {
+      epgMock.nowPlaying = programme('Program Alpha');
+      sidebar.refresh();
+      finishOpening();
       vi.advanceTimersByTime(20);
 
-      expect(texts[0].classList.contains('scrolling')).toBe(true);
-      expect(texts[0].style.getPropertyValue('--scroll-dist')).toBe('-60px');
-      expect(texts[1].classList.contains('scrolling')).toBe(false);
-      expect(texts[1].style.getPropertyValue('--scroll-dist')).toBe('');
-
-      Object.defineProperty(texts[0], 'offsetWidth', { value: 100 });
-      (sidebar as unknown as { measureMarquees: () => void }).measureMarquees();
-      vi.advanceTimersByTime(20);
-
-      expect(texts[0].classList.contains('scrolling')).toBe(false);
-      expect(texts[0].style.getPropertyValue('--scroll-dist')).toBe('');
+      const row = items()[1];
+      expect(row.querySelector('.ch-name')?.textContent).toBe('Bravo');
+      expect(row.querySelector('.ch-now')?.textContent).toBe('Program Alpha');
+      expect(el.querySelector('.scrolling, .ch-name-text, .ch-now-text')).toBeNull();
     });
 
-    it('keeps the existing program-name marquee behavior', () => {
-      epgMock.nowPlaying = { title: 'Program Alpha' };
+    it('spells out the focused channel in the details card', () => {
+      epgMock.nowPlaying = programme('A long program title that a row would clip',
+        'What happens in the program.');
+      epgMock.upcoming = [{
+        title: 'The program after it',
+        start: new Date(2026, 0, 1, 21, 30),
+        stop: new Date(2026, 0, 1, 22, 0),
+      }];
       sidebar.refresh();
-      const container = el.querySelector<HTMLElement>('.ch-now')!;
-      const text = container.querySelector<HTMLElement>('.ch-now-text')!;
-      Object.defineProperty(container, 'offsetWidth', { value: 100 });
-      Object.defineProperty(text, 'offsetWidth', { value: 160 });
 
-      (sidebar as unknown as { measureMarquees: () => void }).measureMarquees();
-      vi.advanceTimersByTime(20);
+      const card = peek();
+      expect(card.classList.contains('visible')).toBe(true);
+      expect(card.querySelector('.sidebar-peek-name')?.textContent).toBe('Bravo');
+      expect(card.querySelector('.sidebar-peek-num')?.textContent).toBe('2');
+      expect(card.querySelector('.sidebar-peek-title')?.textContent)
+        .toBe('A long program title that a row would clip');
+      expect(card.querySelector('.sidebar-peek-desc')?.textContent)
+        .toBe('What happens in the program.');
+      expect(card.querySelector('.sidebar-peek-next-title')?.textContent)
+        .toBe('The program after it');
 
-      expect(text.classList.contains('scrolling')).toBe(true);
-      expect(text.style.getPropertyValue('--scroll-dist')).toBe('-60px');
+      sidebar.handleAction('down');
+      vi.advanceTimersByTime(200);
+      expect(card.querySelector('.sidebar-peek-name')?.textContent).toBe('Charlie');
+    });
+
+    it('lets a held key run ahead of the details card, then catches up', () => {
+      sidebar.show();
+      const card = peek();
+      vi.advanceTimersByTime(CONFIG.NAVIGATION.FOCUS_REPEAT_WINDOW_MS + 1);
+
+      sidebar.handleAction('up');
+      expect(card.querySelector('.sidebar-peek-name')?.textContent).toBe('Alpha');
+      sidebar.handleAction('down');
+      sidebar.handleAction('down');
+      expect(card.querySelector('.sidebar-peek-name')?.textContent).toBe('Alpha');
+
+      vi.advanceTimersByTime(200);
+      expect(card.querySelector('.sidebar-peek-name')?.textContent).toBe('Charlie');
+    });
+
+    it('shows the details card only while a channel row has the focus', () => {
+      sidebar.show();
+      const card = peek();
+      expect(card.classList.contains('visible')).toBe(true);
+
+      sidebar.handleAction('left');
+      expect(groupItems().some(item => item.classList.contains('focused'))).toBe(true);
+      expect(card.classList.contains('visible')).toBe(false);
+
+      sidebar.handleAction('right');
+      expect(card.classList.contains('visible')).toBe(true);
+
+      highlightSearch();
+      expect(el.querySelector('.sidebar-search-input')?.classList.contains('focused')).toBe(true);
+      expect(card.classList.contains('visible')).toBe(false);
+
+      sidebar.handleAction('down'); // the source tabs
+      expect(card.classList.contains('visible')).toBe(false);
+      sidebar.handleAction('down');
+      expect(card.classList.contains('visible')).toBe(true);
+      sidebar.hide();
+      expect(card.classList.contains('visible')).toBe(false);
+    });
+
+    it('drops a channel logo that fails to load from the details card', () => {
+      channels[1].logo = 'http://host/logo-b.png';
+      try {
+        sidebar.refresh();
+        const image = peek().querySelector<HTMLImageElement>('.sidebar-peek-logo-img')!;
+        expect(image.getAttribute('src')).toBe('http://host/logo-b.png');
+
+        image.dispatchEvent(new Event('error'));
+
+        expect(peek().querySelector('.sidebar-peek-logo-img')).toBeNull();
+        expect(peek().querySelector('.sidebar-peek-initial')?.textContent).toBe('B');
+      } finally {
+        channels[1].logo = '';
+      }
     });
 
     it('typing in the search box filters channels across playlists', async () => {
@@ -734,49 +803,6 @@ describe('Sidebar', () => {
       expect(el.querySelector('.sidebar-channel-title')?.textContent?.trim()).toBe('Sports');
       expect(items()[0].classList.contains('focused')).toBe(true);
       expect(el.classList.contains('groups-expanded')).toBe(true);
-    });
-
-    it('keeps channel marquees through a delayed scroll render', () => {
-      recentMock.items = [{
-        kind: 'live',
-        channel: channels[0],
-        channelIndex: 0,
-        updatedAt: 1000,
-      }];
-
-      sidebar.handleAction('left');
-      sidebar.handleAction('select'); // All
-      sidebar.handleAction('left');
-      sidebar.handleAction('down');
-      sidebar.handleAction('down');
-      sidebar.handleAction('select'); // Recently Watched
-
-      const name = el.querySelector<HTMLElement>('.ch-name')!;
-      const text = name.querySelector<HTMLElement>('.ch-name-text')!;
-      Object.defineProperty(name, 'offsetWidth', { value: 100 });
-      Object.defineProperty(text, 'offsetWidth', { value: 160 });
-      const target = sidebar as unknown as { measureMarquees: () => void };
-      const measure = vi.spyOn(target, 'measureMarquees');
-
-      vi.advanceTimersByTime(20);
-      expect(measure).not.toHaveBeenCalled();
-      expect(text.classList.contains('scrolling')).toBe(false);
-
-      finishOpening();
-      vi.advanceTimersByTime(20);
-
-      expect(measure).toHaveBeenCalledTimes(1);
-      expect(text.classList.contains('scrolling')).toBe(true);
-      expect(text.style.getPropertyValue('--scroll-dist')).toBe('-60px');
-
-      measure.mockClear();
-      el.querySelector<HTMLElement>('.sidebar-channel-list')!
-        .dispatchEvent(new Event('scroll'));
-      vi.advanceTimersByTime(20);
-
-      expect(text.classList.contains('scrolling')).toBe(true);
-      expect(text.style.getPropertyValue('--scroll-dist')).toBe('-60px');
-      expect(measure).not.toHaveBeenCalled();
     });
 
     it('Left from expanded channels returns focus to the active group', () => {

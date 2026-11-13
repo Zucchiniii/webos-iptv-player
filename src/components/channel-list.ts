@@ -48,6 +48,9 @@ const GRID_OVERSCAN = 3;
 const GRID_VIEWPORT_FALLBACK = 740;
 // How long focus must rest before the header catches up during a held key.
 const HERO_SETTLE_MS = 140;
+// Past this many characters a name takes two lines at the header's full
+// size; the canvas is always 1920 wide, so a length stands in for measuring.
+const HERO_LONG_NAME = 32;
 
 type PreviewHintState = 'off' | 'ready' | 'active';
 type RowList = 'group' | 'channel';
@@ -1584,10 +1587,11 @@ export class ChannelList {
           <span class="channel-hero-group">${group}</span>
           ${ch.catchupDays > 0 ? html`<span class="channel-hero-badge">${t('common.catchup')}</span>` : ''}
         </div>
-        <div class="channel-hero-name">${raw(channelLockBadge(ch))}${ch.name}</div>
+        <div class="channel-hero-name ${ch.name.length > HERO_LONG_NAME ? 'is-long' : ''}">${
+          raw(channelLockBadge(ch))}${ch.name}</div>
         ${now ? html`
           <div class="channel-hero-now">
-            <span class="live-badge"><span class="live-badge-dot"></span>${t('common.live')}</span>
+            <span class="live-badge"><span class="live-badge-dot"></span><span>${t('common.live')}</span></span>
             <span class="channel-hero-title">${now.title}</span>
             <span class="channel-hero-time">${t('preview.timeLeft', { minutes: minutesLeft })}</span>
           </div>

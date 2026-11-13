@@ -61,6 +61,7 @@
    follow the theme. The light variant is opt-in via "Player overlay". */
 .player-osd,
 .player-sidebar,
+.sidebar-peek,
 .player-menu,
 .subs-overlay,
 .subs-offset-card,
@@ -83,6 +84,8 @@
    reads as a bright card. */
 [data-overlay="frosted"] .player-osd,
 [data-overlay="frosted"] .player-sidebar,
+[data-overlay="frosted"] .player-sidebar::before,
+[data-overlay="frosted"] .sidebar-peek,
 [data-overlay="frosted"] .player-menu,
 [data-overlay="frosted"] .subs-overlay,
 [data-overlay="frosted"] .subs-offset-card,
@@ -102,6 +105,13 @@
   --overlay-divider: rgba(0, 0, 0, 0.18);
   --overlay-chip: rgba(0, 0, 0, 0.08);
   color: var(--text-primary);
+}
+
+/* The sidebar's glass is its ::before layer (see .player-sidebar). */
+[data-overlay="frosted"] .player-sidebar {
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .osd-channel {
@@ -444,24 +454,41 @@
 }
 
 /* Player sidebar overlay (Magic Remote / left key) */
-/* A floating glass panel inset from the screen edge. */
+/* A floating glass panel inset from the screen edge. The glass is a layer of
+   its own that covers only what is on screen: with the groups slid away, the
+   panel's box still reaches past the 20px inset, and the box itself would
+   show that edge as a sliver at the screen's left. */
 .player-sidebar {
   position: absolute;
   top: 20px;
   left: 20px;
   width: fit-content;
   height: 1040px;
-  background: rgba(12, 13, 17, 0.9);
-  backdrop-filter: blur(24px) saturate(1.4);
   z-index: 70;
   display: flex;
   flex-direction: row;
-  overflow: hidden;
   transform: translateX(calc(-100% - 40px));
   transition: transform 0.28s var(--ease-out);
+}
+
+.player-sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: -1;
+  background: rgba(12, 13, 17, 0.9);
+  backdrop-filter: blur(24px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 28px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  transition: width 0.28s var(--ease-out);
+}
+
+.player-sidebar.channels-only::before {
+  width: 420px;
 }
 
 .player-sidebar.hidden {
@@ -484,6 +511,7 @@
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+  border-radius: 28px;
 }
 
 .player-sidebar .sidebar-group-panel {
@@ -491,6 +519,12 @@
   min-width: 280px;
   max-width: 440px;
   border-right: 1px solid var(--border);
+  border-radius: 28px 0 0 28px;
+  transition: opacity 0.28s var(--ease-out);
+}
+
+.player-sidebar.channels-only .sidebar-group-panel {
+  opacity: 0;
 }
 
 .player-sidebar .sidebar-group-width-probe {
@@ -820,25 +854,18 @@
   line-height: 1.25;
   overflow: hidden;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
+/* Rows stay still and clip; the details card beside the panel spells out
+   the focused row in full. */
 .player-sidebar .sidebar-ch-item .ch-now {
   font-size: 18px;
   line-height: 1.25;
   color: var(--text-secondary);
   overflow: hidden;
   white-space: nowrap;
-}
-
-.player-sidebar .sidebar-ch-item .ch-name .ch-name-text,
-.player-sidebar .sidebar-ch-item .ch-now .ch-now-text {
-  display: inline-block;
-  white-space: nowrap;
-}
-
-.player-sidebar .sidebar-ch-item .ch-name .ch-name-text.scrolling,
-.player-sidebar .sidebar-ch-item .ch-now .ch-now-text.scrolling {
-  animation: marquee-bounce 6s ease-in-out infinite;
+  text-overflow: ellipsis;
 }
 
 .player-sidebar .sidebar-recent-kind {
@@ -851,10 +878,210 @@
   font-weight: 700;
 }
 
-@keyframes marquee-bounce {
-  0%, 15% { transform: translateX(0); }
-  45%, 55% { transform: translateX(var(--scroll-dist)); }
-  85%, 100% { transform: translateX(0); }
+/* Details card: the focused channel in full, beside the channel panel
+   (20px inset + 420px panel + 16px). It follows the panel's edge as the
+   groups slide in, through an inline translateX set by sidebar.ts. */
+.sidebar-peek {
+  position: absolute;
+  top: 20px;
+  left: 456px;
+  width: 620px;
+  max-height: 1040px;
+  padding: 28px 32px 30px;
+  overflow: hidden;
+  background: rgba(12, 13, 17, 0.9);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s var(--ease-out), transform 0.28s var(--ease-out),
+    visibility 0s linear 0.2s;
+}
+
+.sidebar-peek.visible {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s var(--ease-out), transform 0.28s var(--ease-out);
+}
+
+.sidebar-peek-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.sidebar-peek-logo {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 20px;
+  background: var(--overlay-chip);
+}
+
+.sidebar-peek-logo-img {
+  max-width: 62px;
+  max-height: 62px;
+  object-fit: contain;
+}
+
+.sidebar-peek-initial {
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.sidebar-peek-kicker {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sidebar-peek-num {
+  padding: 2px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--overlay-chip);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.sidebar-peek-group {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.sidebar-peek-badge {
+  padding: 2px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-dim);
+  color: #fff;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.sidebar-peek-name {
+  margin-top: 18px;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sidebar-peek-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 20px;
+  font-size: 19px;
+  color: var(--text-secondary);
+}
+
+.sidebar-peek-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.sidebar-peek-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sidebar-peek-title {
+  margin-top: 10px;
+  font-size: 28px;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sidebar-peek-progress {
+  height: 5px;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--overlay-chip);
+}
+
+.sidebar-peek-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+.sidebar-peek-desc {
+  margin-top: 18px;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sidebar-peek-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-peek-next-time {
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.sidebar-peek-next-title {
+  flex-basis: 100%;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Player right menu (Magic Remote / right key) */
@@ -1180,7 +1407,8 @@
    holds nothing behind these panels to blur and the filter only spends GPU
    time while video plays. The panels stay readable as near-opaque glass. */
 html.is-webos .player-osd,
-html.is-webos .player-sidebar,
+html.is-webos .player-sidebar::before,
+html.is-webos .sidebar-peek,
 html.is-webos .player-menu,
 html.is-webos .subs-overlay,
 html.is-webos .subs-offset-card,

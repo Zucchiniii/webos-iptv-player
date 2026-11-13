@@ -3,7 +3,7 @@
 //   node scripts/generate-screenshots.mjs
 //
 // It drives the *real* app (built into dist/) in headless Chromium with demo
-// fixtures and a frozen clock, then captures each view into screenshots/:
+// fixtures and a frozen clock, then captures each view into docs/screenshots/:
 //
 //   channel-list.png   channel list (the README hero)
 //   live-preview.png   Pastel Latte live preview with the Mute hint focused
@@ -37,7 +37,7 @@ import { readFile, mkdir } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 
 const ROOT = process.cwd();
-const SHOTS = join(ROOT, 'screenshots');
+const SHOTS = join(ROOT, 'docs', 'screenshots');
 const SCALE = 1; // device pixel ratio — 1 = native 1920x1080 (no upsampling)
 const SETUP_PAGE_HTML = await readFile(
   join(ROOT, 'bundled-service/src/setup/setup-page.html'),
@@ -853,8 +853,8 @@ async function enterTab(page, section) {
   await page.evaluate(() => document.activeElement instanceof HTMLElement && document.activeElement.blur());
 }
 
-// Capture to screenshots/<name>. Disabling animations freezes the infinite
-// CSS loops (the playing-indicator pulse, sidebar marquee) that otherwise keep
+// Capture to docs/screenshots/<name>. Disabling animations freezes the infinite
+// CSS loops (the playing-indicator pulse, the live dots) that otherwise keep
 // the compositor busy and intermittently fail Page.captureScreenshot.
 async function shoot(page, name) {
   for (let attempt = 1; ; attempt++) {
@@ -987,7 +987,7 @@ try {
     await gotoChannels(page, base);
     await remote(page, KEY.RED); // open EPG
     await page.locator('#view-epg').waitFor({ state: 'visible' });
-    await page.locator('.live-badge').first().waitFor({ state: 'visible', timeout: 10_000 });
+    await page.locator('#view-epg .live-badge').first().waitFor({ state: 'visible', timeout: 10_000 });
     await page.locator('.epg-catchup-badge').first().waitFor({ state: 'visible', timeout: 10_000 });
     await remote(page, 39); // RIGHT → focus the programmes column (first row)
     for (let n = 0; n < 6; n++) await remote(page, 40); // DOWN → "The Evening Debate" (21:00, Resume)

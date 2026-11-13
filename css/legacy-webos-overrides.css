@@ -71,7 +71,8 @@ html.q-scroll-end-padding .catalog-category-rail::after { content: none; }
 }
 
 @supports not (backdrop-filter: blur(1px)) {
-  .player-sidebar,
+  .player-sidebar::before,
+  .sidebar-peek,
   .player-menu,
   .player-osd,
   .number-entry,

@@ -255,6 +255,27 @@ test('player sidebar channel rows fit both text lines in their fixed box', async
   expect(fit.needed).toBeLessThanOrEqual(fit.available);
 });
 
+test('a card beside the channel panel spells out the focused channel', async ({ page }) => {
+  await gotoGroupedPlayer(page);
+  await page.keyboard.press('ArrowLeft');
+
+  const peek = page.locator('.sidebar-peek');
+  await expect(peek).toHaveClass(/visible/);
+  await expect(peek.locator('.sidebar-peek-name')).toHaveText('Beta News');
+  const panel = await page.locator('#player-sidebar .sidebar-channel-panel').boundingBox();
+  const card = await peek.boundingBox();
+  expect(card!.x).toBeGreaterThanOrEqual(panel!.x + panel!.width);
+  expect(card!.x + card!.width).toBeLessThanOrEqual(1920);
+
+  await page.keyboard.press('ArrowDown');
+  await expect(peek.locator('.sidebar-peek-name')).toHaveText('Alpha Movies');
+
+  await page.keyboard.press('ArrowLeft'); // the groups pane takes the keys
+  await expect(peek).not.toHaveClass(/visible/);
+  await page.keyboard.press('ArrowRight');
+  await expect(peek).toHaveClass(/visible/);
+});
+
 test('dark player overlay keeps sidebar scrollbar dark on a light theme', async ({ page }) => {
   await routePlaylist(page, SEARCH_M3U);
   await seedPlaylist(page);

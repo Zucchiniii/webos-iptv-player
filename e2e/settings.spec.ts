@@ -246,10 +246,7 @@ test.describe('Settings navigation', () => {
         <div class="epg-programme-item state-live"></div>
         <div class="player-sidebar visible channels-only">
           <div class="sidebar-picker-arrow"><svg></svg></div>
-          <div class="sidebar-ch-item">
-            <div class="ch-name"><span class="ch-name-text scrolling"></span></div>
-            <div class="ch-now"><span class="ch-now-text scrolling"></span></div>
-          </div>
+          <div class="sidebar-ch-item"></div>
         </div>
       `;
       document.body.appendChild(motionFixtures);
@@ -279,12 +276,6 @@ test.describe('Settings navigation', () => {
         groupPicker: getComputedStyle(
           motionFixtures.querySelector('.sidebar-picker-arrow svg')!,
         ).animationName,
-        channelMarquee: getComputedStyle(
-          motionFixtures.querySelector('.ch-name-text')!,
-        ).animationName,
-        programmeMarquee: getComputedStyle(
-          motionFixtures.querySelector('.ch-now-text')!,
-        ).animationName,
         spinner: seconds(getComputedStyle(document.querySelector('.loading-spinner')!)
           .animationDuration),
       };
@@ -302,8 +293,6 @@ test.describe('Settings navigation', () => {
     expect(durations.historyPanel).toBe('none');
     expect(durations.epgLiveRail).toBe('epgRailPulse');
     expect(durations.groupPicker).toBe('group-picker-nudge');
-    expect(durations.channelMarquee).toBe('marquee-bounce');
-    expect(durations.programmeMarquee).toBe('marquee-bounce');
     expect(durations.spinner).toContain(1.4);
 
     await page.reload();

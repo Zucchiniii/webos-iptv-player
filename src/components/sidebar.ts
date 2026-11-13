@@ -15,7 +15,7 @@ import { $, html, inShownView, onceTransitionEnd, raw, type Safe } from '../util
 import { morph } from '../utils/morph';
 import { rankChannels } from '../utils/channel-search';
 import { groupDisplayLabel } from '../utils/channel';
-import { formatPosition } from '../utils/time';
+import { formatPosition, formatTime } from '../utils/time';
 import { getLocale, t, type SupportedLocale } from '../i18n';
 import { groupIcon } from './group-icon';
 import { CHEVRON_LEFT_ICON } from './icons';
@@ -58,6 +58,9 @@ const CHANNEL_ROW_GAP = 4;
 const GROUP_ROW_STRIDE = 64;
 const CHANNEL_OVERSCAN = 12;
 const FALLBACK_LIST_HEIGHT = 800;
+// A held key steps through rows faster than the details card is worth
+// repainting; it catches up once the key rests.
+const PEEK_SETTLE_MS = 140;
 
 /**
  * The channel overlay shown on the left edge during playback. Owns its own
@@ -130,6 +133,10 @@ export class Sidebar {
   private logoLoadGeneration = 0;
   private logoRevealQueue: string[] = [];
   private logoRevealFrame: number | null = null;
+  private peek: HTMLElement | null = null;
+  private peekPainted = '';
+  private peekTimer: ReturnType<typeof setTimeout> | null = null;
+  private peekMovedAt = 0;
 
   constructor(
     container: HTMLElement,
@@ -141,6 +148,20 @@ export class Sidebar {
     this.onSelectChannel = onSelectChannel;
     this.getCurrentCatchupStart = getCurrentCatchupStart;
     this.el = $('#player-sidebar', container);
+    if (this.el?.parentElement) {
+      // The details card sits beside the panel, outside its clipped slide.
+      const peek = document.createElement('div');
+      peek.className = 'sidebar-peek';
+      peek.setAttribute('aria-hidden', 'true');
+      this.el.parentElement.insertBefore(peek, this.el.nextSibling);
+      this.peek = peek;
+      peek.addEventListener('error', (e: Event) => {
+        const src = e.target instanceof HTMLImageElement ? e.target.getAttribute('src') : null;
+        if (!src || this.failedLogos.has(src)) return;
+        this.failedLogos.add(src);
+        this.paintPeek();
+      }, true);
+    }
     // The pane indices stay as the virtual lists' cache; the scope holds the
     // focused item's data-key and owns its ring and reveal.
     this.focusScope = Focus.register({
@@ -266,6 +287,7 @@ export class Sidebar {
     this.keyboardOn = false;
     this.opening = false;
     this.cancelLogoLoads();
+    this.hidePeek();
     this.pointerAtGroupEdge = false;
     this.clearGroupDwell();
     this.clearPointerExit();
@@ -308,6 +330,7 @@ export class Sidebar {
     } else if (this.channelFocusIdx < 0) {
       this.hide();
     } else {
+      this.updatePeek();
       this.resetTimer();
     }
   }
@@ -587,6 +610,7 @@ export class Sidebar {
   private paint(via: Via): void {
     this.focusScope.focus(this.stateKey(), via);
     Focus.flush();
+    this.updatePeek();
   }
 
   // Scroll a virtual list to the focused row and render it; the tab strip is
@@ -757,7 +781,7 @@ export class Sidebar {
     const selected = groups.findIndex(group => group.id === this.group);
     this.groupFocusIdx = selected >= 0 ? selected : 0;
     this.syncPanelState();
-    this.render(true, true);
+    this.render(true);
   }
 
   // A pointer collapse only follows the state: it neither scrolls nor
@@ -835,14 +859,10 @@ export class Sidebar {
 
   // Only opening the groups pane reveals its focus; key moves reveal through
   // the focus scope, and background renders keep the user's scroll offset.
-  private render(measureMarquees = true, revealGroup = false): void {
+  private render(revealGroup = false): void {
     const el = this.el;
     if (!el) return;
 
-    const scrolling = measureMarquees
-      ? []
-      : Array.from(el.querySelectorAll<HTMLElement>('.ch-name-text.scrolling, .ch-now-text.scrolling'))
-        .map(span => ({ span, dist: span.style.getPropertyValue('--scroll-dist') }));
     const tabs = PlaylistService.playlistTabs;
     if (this.playlist && !tabs.some(t => t.id === this.playlist)) this.playlist = '';
     const showTabs = tabs.length > 1;
@@ -959,8 +979,8 @@ export class Sidebar {
                 <span class="ch-num">${globalIdx + 1}</span>
                 ${this.renderLogo(ch)}
                 <div class="ch-info">
-                  <span class="ch-name">${raw(channelLockBadge(ch))}<span class="ch-name-text">${title}</span></span>
-                  ${subtitle ? html`<span class="ch-now"><span class="ch-now-text">${subtitle}</span></span>` : ''}
+                  <span class="ch-name">${raw(channelLockBadge(ch))}${title}</span>
+                  ${subtitle ? html`<span class="ch-now">${subtitle}</span>` : ''}
                 </div>
                 ${catchup
                   ? html`<span class="sidebar-recent-kind">${t('common.catchup')}</span>`
@@ -979,15 +999,8 @@ export class Sidebar {
     if (search && search.value !== this.searchQuery) search.value = this.searchQuery;
     this.focusScope.track(this.stateKey());
 
-    scrolling.forEach(({ span, dist }) => {
-      if (!el.contains(span)) return;
-      span.style.setProperty('--scroll-dist', dist);
-      span.classList.add('scrolling');
-    });
-    if (!this.opening) {
-      if (measureMarquees) this.measureMarquees();
-      this.scheduleVisibleLogoLoads();
-    }
+    if (!this.opening) this.scheduleVisibleLogoLoads();
+    this.updatePeek(true);
   }
 
   private groupWidthScore(group: SidebarGroup): number {
@@ -1014,6 +1027,158 @@ export class Sidebar {
       `;
     }
     return html`<div class="ch-logo-wrap" data-logo-src="${ch.logo}"></div>`;
+  }
+
+  // The row the details card describes: the focused channel, while the
+  // channel list owns the focus. Rows clip long text; the card never does.
+  private peekEntry(): SidebarEntry | null {
+    if (!this.isVisible || this.keyboardOn || this.activePane !== 'channels'
+        || this.channelFocusIdx < 0) return null;
+    // The focused row is rendered and carries its channel number, which
+    // resolving the entry would look up across the whole playlist.
+    const source = this.getChannelSource();
+    if (source.kind === 'channels') {
+      const ch = source.channels[this.channelFocusIdx];
+      const row = this.el?.querySelector<HTMLElement>(
+        `.sidebar-ch-item[data-sidebar-pos="${String(this.channelFocusIdx)}"]`);
+      const index = row ? parseInt(row.dataset.sidebarIndex ?? '', 10) : NaN;
+      if (ch && index >= 0) return { ch, globalIdx: index };
+    }
+    return this.getChannelEntry(this.channelFocusIdx);
+  }
+
+  private peekKey(entry: SidebarEntry): string {
+    const epgId = EpgService.findChannelId(entry.ch);
+    const now = epgId ? EpgService.getNowPlaying(epgId) : null;
+    const next = epgId ? EpgService.getUpcoming(epgId, 1)[0] : undefined;
+    return [
+      this.entryKey(entry),
+      now ? `${String(now.start.getTime())}|${now.title}` : '',
+      next ? String(next.start.getTime()) : '',
+      entry.ch.logo && !this.failedLogos.has(entry.ch.logo) ? entry.ch.logo : '',
+    ].join('|');
+  }
+
+  // `refresh`: a re-render repaints a changed card at once; a move, while a
+  // key is held, waits for the key to rest.
+  private updatePeek(refresh = false): void {
+    const peek = this.peek;
+    if (!peek) return;
+    const entry = this.peekEntry();
+    if (!entry) {
+      this.hidePeek();
+      return;
+    }
+    this.syncPeekOffset();
+    const key = this.peekKey(entry);
+    const shown = peek.classList.contains('visible');
+    if (key === this.peekPainted && shown) return;
+    const moved = !refresh || !this.peekPainted.startsWith(`${this.entryKey(entry)}|`);
+    if (this.peekTimer !== null) {
+      clearTimeout(this.peekTimer);
+      this.peekTimer = null;
+    }
+    const now = Date.now();
+    const held = moved && now - this.peekMovedAt < CONFIG.NAVIGATION.FOCUS_REPEAT_WINDOW_MS;
+    if (moved) this.peekMovedAt = now;
+    if (held && shown) {
+      this.peekTimer = setTimeout(() => {
+        this.peekTimer = null;
+        this.paintPeek();
+      }, PEEK_SETTLE_MS);
+      return;
+    }
+    this.paintPeek();
+  }
+
+  private paintPeek(): void {
+    const peek = this.peek;
+    const entry = this.peekEntry();
+    if (!peek || !entry) {
+      this.hidePeek();
+      return;
+    }
+    this.peekPainted = this.peekKey(entry);
+    morph(peek, html`${this.peekContent(entry)}`);
+    peek.classList.add('visible');
+  }
+
+  private hidePeek(): void {
+    if (this.peekTimer !== null) {
+      clearTimeout(this.peekTimer);
+      this.peekTimer = null;
+    }
+    this.peekPainted = '';
+    this.peek?.classList.remove('visible');
+  }
+
+  // The card follows the panel's right edge as the groups slide in or out.
+  private syncPeekOffset(): void {
+    const peek = this.peek;
+    if (!peek) return;
+    const groups = this.groupsExpanded
+      ? this.el?.querySelector<HTMLElement>('.sidebar-group-panel')?.offsetWidth ?? 0
+      : 0;
+    const transform = groups ? `translateX(${String(groups)}px)` : '';
+    if (peek.style.transform !== transform) peek.style.transform = transform;
+  }
+
+  private peekContent({ ch, globalIdx, recent }: SidebarEntry): Safe {
+    const catchup = recent?.kind === 'catchup' ? recent : null;
+    const epgId = catchup ? null : EpgService.findChannelId(ch);
+    const now = epgId ? EpgService.getNowPlaying(epgId) : null;
+    const next = epgId ? EpgService.getUpcoming(epgId, 1)[0] ?? null : null;
+    const span = now ? now.stop.getTime() - now.start.getTime() : 0;
+    const percent = now && span > 0
+      ? Math.round(Math.max(0, Math.min(1, (Date.now() - now.start.getTime()) / span)) * 100)
+      : 0;
+    const minutesLeft = now
+      ? Math.max(0, Math.round((now.stop.getTime() - Date.now()) / 60000))
+      : 0;
+    const logo = ch.logo && !this.failedLogos.has(ch.logo)
+      ? html`<img class="sidebar-peek-logo-img" src="${ch.logo}" alt="">`
+      : html`<span class="sidebar-peek-initial">${ch.name.charAt(0)}</span>`;
+    const group = groupDisplayLabel(ch.group);
+    return html`
+      <div class="sidebar-peek-head">
+        <div class="sidebar-peek-logo">${logo}</div>
+        <div class="sidebar-peek-kicker">
+          <span class="sidebar-peek-num">${String(globalIdx + 1)}</span>
+          ${group ? html`<span class="sidebar-peek-group">${group}</span>` : ''}
+          ${catchup || ch.catchupDays > 0
+            ? html`<span class="sidebar-peek-badge">${t('common.catchup')}</span>`
+            : ''}
+        </div>
+      </div>
+      <div class="sidebar-peek-name">${raw(channelLockBadge(ch))}${ch.name}</div>
+      ${catchup ? html`
+        <div class="sidebar-peek-meta">
+          <span class="sidebar-peek-label">${t('common.resume')}</span>
+          <span class="sidebar-peek-time">${formatPosition(catchup.progress.position)}</span>
+        </div>
+        ${catchup.progress.title
+          ? html`<div class="sidebar-peek-title">${catchup.progress.title}</div>`
+          : ''}
+      ` : now ? html`
+        <div class="sidebar-peek-meta">
+          <span class="live-badge"><span class="live-badge-dot"></span><span>${t('common.live')}</span></span>
+          <span class="sidebar-peek-time">${formatTime(now.start)}–${formatTime(now.stop)}</span>
+          <span class="sidebar-peek-left">${t('preview.timeLeft', { minutes: minutesLeft })}</span>
+        </div>
+        <div class="sidebar-peek-title">${now.title}</div>
+        <div class="sidebar-peek-progress"><i style="width:${percent}%"></i></div>
+        ${now.description
+          ? html`<div class="sidebar-peek-desc">${now.description}</div>`
+          : ''}
+      ` : ''}
+      ${next ? html`
+        <div class="sidebar-peek-next">
+          <span class="sidebar-peek-label">${t('player.upNext')}</span>
+          <span class="sidebar-peek-next-time">${formatTime(next.start)}</span>
+          <span class="sidebar-peek-next-title">${next.title}</span>
+        </div>
+      ` : ''}
+    `;
   }
 
   private renderHealthDot(ch: Channel): Safe | string {
@@ -1131,27 +1296,6 @@ export class Sidebar {
     }
   }
 
-  private measureMarquees(): void {
-    const el = this.el;
-    if (!el) return;
-    requestAnimationFrame(() => {
-      el.querySelectorAll<HTMLElement>('.ch-name, .ch-now').forEach(container => {
-        const span = container.querySelector<HTMLElement>('.ch-name-text, .ch-now-text');
-        if (!span) return;
-        const textWidth = span.offsetWidth;
-        const containerWidth = container.offsetWidth;
-        if (textWidth > containerWidth) {
-          const dist = containerWidth - textWidth;
-          span.style.setProperty('--scroll-dist', `${dist}px`);
-          span.classList.add('scrolling');
-        } else {
-          span.style.removeProperty('--scroll-dist');
-          span.classList.remove('scrolling');
-        }
-      });
-    });
-  }
-
   private bindEvents(): void {
     const el = this.el;
     if (!el) return;
@@ -1164,7 +1308,6 @@ export class Sidebar {
       if (!this.opening) return;
       this.opening = false;
       if (this.pointerAtGroupEdge) this.startGroupDwell();
-      this.measureMarquees();
       this.scheduleVisibleLogoLoads();
     });
 
@@ -1328,7 +1471,7 @@ export class Sidebar {
         if (this.groupScrollFrame !== null) return;
         this.groupScrollFrame = requestAnimationFrame(() => {
           this.groupScrollFrame = null;
-          if (this.isVisible) this.render(false);
+          if (this.isVisible) this.render();
         });
         return;
       }
@@ -1339,7 +1482,7 @@ export class Sidebar {
       if (this.scrollFrame !== null) return;
       this.scrollFrame = requestAnimationFrame(() => {
         this.scrollFrame = null;
-        if (this.isVisible) this.render(false);
+        if (this.isVisible) this.render();
       });
     }, true);
 

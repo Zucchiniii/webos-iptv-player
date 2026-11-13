@@ -1,77 +1,139 @@
 <div align="center">
-  <img src="assets/icon.svg" alt="webOS IPTV Player icon">
+  <img src="assets/icon-rounded.svg" width="128" height="128" alt="webOS IPTV Player icon">
   <h1>webOS IPTV Player</h1>
-  <p>An IPTV player for LG webOS TVs. Supports M3U playlists, Xtream Codes accounts, XMLTV program guides, and catch-up/timeshift playback.</p>
-  <p><strong>More webOS tools:</strong> <a href="https://github.com/lennylxx/lg-devmode-forever">DevMode Forever</a> · <a href="https://github.com/lennylxx/lg-geolock-bypass">GeoLock Bypass</a> · <a href="https://github.com/lennylxx/lg-ipk-download">IPK Download</a></p>
-  <p>English | <a href="README.zh-CN.md">简体中文</a></p>
+  <p><strong>A fast, modern IPTV player for LG webOS TVs.</strong><br>
+  M3U playlists, Xtream Codes accounts, an XMLTV guide, catch-up and timeshift, rebuilt for huge playlists and the 10-foot screen.</p>
   <p>
   <a href="#supported-webos-versions"><img src="https://img.shields.io/badge/webOS-4%2B-e6007e?logo=webos&logoColor=white" alt="webOS 4+"></a>
-  <a href="https://github.com/lennylxx/webos-iptv-player/releases/latest"><img src="https://img.shields.io/github/v/release/lennylxx/webos-iptv-player" alt="Latest release"></a>
-  <a href="https://github.com/lennylxx/webos-iptv-player/releases"><img src="https://img.shields.io/github/downloads/lennylxx/webos-iptv-player/total" alt="GitHub downloads"></a>
-  <a href="https://lennylxx.github.io/webos-iptv-player/"><img src="https://img.shields.io/badge/Website-222?logo=github" alt="Project website"></a>
+  <a href="https://github.com/Zucchiniii/webos-iptv-player/releases/latest"><img src="https://img.shields.io/github/v/release/Zucchiniii/webos-iptv-player" alt="Latest release"></a>
+  <a href="#install"><img src="https://img.shields.io/badge/Homebrew%20Channel-ready-4f7dff" alt="Homebrew Channel ready"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0"></a>
   </p>
+  <p>Maintained by <a href="https://github.com/Zucchiniii">@Zucchiniii</a> · based on
+  <a href="https://github.com/lennylxx/webos-iptv-player">webOS IPTV Player by lennylxx</a></p>
 </div>
 
-## What's new in 2.1
+<p align="center">
+  <img src="docs/screenshots/live-grid.png" alt="Live TV: country chips, the focused channel's now and next, and the channel grid">
+</p>
 
-- **Sharper picture.** The TV's native player caps adaptive streams at 1080p and starts every
-  channel low unless the app asks otherwise. On a 4K TV, channels now play up to 2160p and start
-  at full quality (Settings → Playback → Stream quality; Standard restores the TV's defaults).
-- **Sharper artwork, less memory.** Movie and series heroes switch to the title's widescreen
-  backdrop once focus rests; posters are fetched at the size they're drawn.
-- **Smoother navigation.** Focus changes animate only on the compositor, big blurred shadows are
-  gone from focus states, the channel header waits while a key is held, and the player panels skip
-  a blur the TV's video plane can't show.
+## Install
 
-## What's new in 2.0 (this fork)
+1. Install [webOS Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel) on the
+   TV (rooted TVs and Developer Mode both work).
+2. In Homebrew Channel open **Settings → Add repository** and enter:
 
-- **Stable with huge playlists.** Movies and series that M3U lists mix into Live are filtered out
-  (300,000-entry list: peak memory down ~2.7×), pasted `get.php` URLs become Xtream accounts,
-  Live is capped at 150,000 channels, and a crash during loading reopens the app in a safe mode
+   ```text
+   https://raw.githubusercontent.com/Zucchiniii/webos-iptv-player/main/homebrew-repository.json
+   ```
+
+3. Find **webOS IPTV Player** in the app list and choose **Install**. New releases show up there
+   as updates.
+
+Coming from the original app? This fork keeps the same app ID, so it installs over it and keeps
+your playlists, favorites, and settings. Prefer the command line? See
+[Developer Mode](#developer-mode) below.
+
+## What's new in 2.2
+
+- **Read every channel in full.** While you watch, a card beside the channel list shows the
+  focused channel's full name, what's on with its time and progress, the program description,
+  and what's next. Rows no longer slide their text back and forth. In Live, card names and the
+  header's name and title wrap onto two lines instead of being cut off.
+- **New app icon** that matches the in-app logo, and a Homebrew Channel page that describes the
+  app and links here.
+- **Fixed:** a thin strip of the hidden group panel showed at the screen's left edge while
+  watching.
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/player-channels.png" alt="While watching: the channel list with the focused channel's details card"></td>
+    <td><img src="docs/screenshots/movie-detail.png" alt="Movie details with backdrop, cast, and resume"></td>
+  </tr>
+  <tr>
+    <td align="center">The channel list while watching, with the details card</td>
+    <td align="center">Movie details</td>
+  </tr>
+</table>
+
+## Why this fork
+
+The original app is excellent under the hood, but large provider lists crashed it on newer TVs,
+and finding a channel meant scrolling long lists. This fork keeps its playback engine and adds:
+
+**Stable with huge playlists (2.0)**
+
+- Movies and series that M3U lists mix into Live are filtered out before they reach memory. On a
+  300,000-entry list, peak memory dropped about 2.7×.
+- Pasted `get.php` links become Xtream accounts automatically, so movies and series land in
+  their own sections.
+- Live is capped at 150,000 channels, and a crash while loading reopens the app in a safe mode
   instead of crash-looping.
-- **Find channels fast.** A card grid with a header that shows what's on now and next for the
-  focused channel, country chips that turn a worldwide list into your own country's groups (your
-  TV's country is picked first), and Live reopens where you left it.
-- **2026 look.** True-black Noir theme, the Inter typeface, a floating glass navigation pill with a
-  clock, cinematic Movies/Series heroes and backdrops, and glass player overlays.
+
+**Find channels fast (2.0)**
+
+- A card grid with a header that shows what's on now and next for the focused channel.
+- Country chips turn a worldwide list into your own country's groups. The TV's location setting
+  picks the first country, and Live reopens where you left it.
+
+**Sharper and smoother (2.1)**
+
+- On a 4K TV, channels play up to 2160p and start at full quality. The TV's player otherwise caps
+  streams at 1080p and starts low (Settings → Playback → Stream quality).
+- Artwork is fetched at the size it's drawn; movie and series heroes switch to the widescreen
+  backdrop.
+- Focus moves animate on the compositor only, and the player panels skip a blur the TV's video
+  plane can't show.
+- Search shows channel results at once and fills in movies and series as the catalog arrives; the
+  catalog is warmed in the background after startup.
+- A channel that loses its stream stays on screen and retries, instead of switching to the next
+  channel. Press OK to retry at once.
+
+**A 2026 look**
+
+- True-black Noir theme, the Inter typeface, a floating glass navigation pill with a clock,
+  cinematic Movies and Series heroes, and glass player overlays.
 
 ## Screenshots
 
-| Channel list | Live preview |
+| Live TV with playlist groups | Live preview |
 | --- | --- |
-| ![Channel list](https://github.com/user-attachments/assets/adb1ff15-1da3-479f-8a2f-0486dca5b082) | ![Live preview](https://github.com/user-attachments/assets/a10915a7-cdea-4bfc-bb12-f6e3054b4b51) |
+| ![Live TV with playlist groups](docs/screenshots/channel-list.png) | ![Live preview](docs/screenshots/live-preview.png) |
 
-| Recently watched | Program guide |
+| Program guide | Catch-up resume |
 | --- | --- |
-| ![Recently watched](https://github.com/user-attachments/assets/ef7aa7a1-7c3e-4b59-8825-fe4a0a441a61) | ![Program guide](https://github.com/user-attachments/assets/9928c342-c2fa-46b8-92f1-b5e815f24f19) |
+| ![Program guide](docs/screenshots/epg-guide.png) | ![Catch-up resume](docs/screenshots/epg-catchup-resume.png) |
 
-| Catch-up resume | Channel info |
+| Channel info | Playback overlays |
 | --- | --- |
-| ![Catch-up resume](https://github.com/user-attachments/assets/641a72bf-db7e-4757-ac71-c8add5114c7a) | ![Channel info](https://github.com/user-attachments/assets/9adf8302-750f-429b-9155-828c8c30f097) |
+| ![Channel info](docs/screenshots/channel-info.png) | ![Playback overlays](docs/screenshots/player.png) |
 
-| Playback overlays | Subtitles |
+| Movies | Series detail |
 | --- | --- |
-| ![Playback overlays](https://github.com/user-attachments/assets/08c81dd7-5811-4fe3-9ed0-3e766d7124f9) | ![Subtitles](https://github.com/user-attachments/assets/5d1fab57-1087-414b-9a20-f900589eac4a) |
+| ![Movies](docs/screenshots/movies.png) | ![Series detail](docs/screenshots/series-detail.png) |
 
-| Subtitle search | Movies |
+| Search | Recently watched |
 | --- | --- |
-| ![Subtitle search](https://github.com/user-attachments/assets/4ef9c97e-131b-4e4f-bf9a-c753d66f2956) | ![Movies](https://github.com/user-attachments/assets/6d4d65c4-9719-4a2f-93a0-2fff4f8c0b2d) |
+| ![Search](docs/screenshots/search.png) | ![Recently watched](docs/screenshots/recently-watched.png) |
 
-| Movie detail | Series detail |
+| Subtitles | Subtitle search |
 | --- | --- |
-| ![Movie detail](https://github.com/user-attachments/assets/b1acbc3c-47f7-4cd2-9fe6-f3b3aca03768) | ![Series detail](https://github.com/user-attachments/assets/2962184e-cc95-455d-aea7-888ff3297dc4) |
+| ![Subtitles](docs/screenshots/subtitles.png) | ![Subtitle search](docs/screenshots/subtitle-search.png) |
 
-| Search | Settings |
+| Settings | Themes |
 | --- | --- |
-| ![Search](https://github.com/user-attachments/assets/0c6c54e2-6fb3-4fb2-a0da-7f6459815390) | ![Settings](https://github.com/user-attachments/assets/8d47b502-ddcf-447f-a6b1-5afbf1b6b9ba) |
+| ![Settings](docs/screenshots/settings.png) | ![Themes](docs/screenshots/themes.png) |
 
-| Theme picker | Reminder manager |
+| Reminder manager | Parental controls |
 | --- | --- |
-| ![Theme picker](https://github.com/user-attachments/assets/2e5ed981-c01b-48ab-a681-9a0ecd6431b8) | ![Reminder manager](https://github.com/user-attachments/assets/76ed121f-61eb-4c36-93a9-9aa6abdb0132) |
+| ![Reminder manager](docs/screenshots/reminder-manager.png) | ![Parental controls](docs/screenshots/parental-controls.png) |
 
-| Parental controls | LAN setup |
+| Phone setup page | |
 | --- | --- |
-| ![Parental controls](https://github.com/user-attachments/assets/7f22d1c3-97bf-4118-a19f-3699bf2779ba) | ![LAN setup](https://github.com/user-attachments/assets/a618e22f-6dae-474d-870e-13aebc22bf63) |
+| ![Phone setup page](docs/screenshots/setup-page.png) | |
+
+Screenshots come from the real app with fictional demo data: `npm run screenshots` regenerates
+all of them.
 
 ## Features
 
@@ -82,6 +144,8 @@
 - **LAN setup** — configure sources and online subtitle settings or upload `.m3u` files from a phone on the same network by scanning a QR code ([LAN service](docs/lan-service.md))
 
 **Live TV & on-demand**
+
+- **Channel grid** — four cards to a row with logos and live progress, a header with the focused channel's now and next, and country chips for provider lists that prefix groups with a country (a list layout is available in Settings)
 
 - **Program guide (EPG)** — three-pane guide with an auto-derived date range, per-source time correction, and caching for instant reopen
 - **Channel health** — check live streams and mark them as healthy, suspect, or unavailable
@@ -105,13 +169,13 @@
 - **Audio & subtitle tracks** — pick from the player menu, remembered per channel or VOD item; subtitles cover in-manifest WebVTT and CEA-608/708 (live), in-container / sidecar SRT/WebVTT/ASS (VOD), and online search (SubDL, OpenSubtitles, and Assrt) with a manual title box; online search remains available when bundled tracks exist, and subtitle timing can be adjusted live
 - **Playback speed** — choose 0.5×–2× for movies and episodes in file formats such as MP4 and MKV; live TV, catch-up, and HLS/DASH streams play at normal speed because the webOS native pipeline ignores rate changes for them
 - **On-screen display** — program title, progress, and a live stream-info readout (resolution, HDR, frame rate, codec, audio channels)
-- **Automatic playback recovery** — detect streams that fail to start or stall, reload transient failures, and advance to the next live channel when recovery is exhausted
+- **Automatic playback recovery** — detect streams that fail to start or stall and reload them; a live channel that stays down is held on screen and retried with a growing pause (OK retries at once) instead of switching channels
 - **Resync A/V** (🔄) — one tap on the playback bar re-locks audio and video that drift apart during a long catch-up or on-demand stream
 
 **Navigation**
 
 - **Search** — across channels, EPG programs, movies, and series, with direct live, catch-up, and reminder actions; recent searches drop down under the search box for one-press repeat searches; the search index is prebuilt in the background and cached, so Search is ready almost instantly
-- **Channel sidebar** — switch channels over the video with current-program info, organized by group
+- **Channel sidebar** — switch channels over the video, organized by group; a card beside the list spells out the focused channel's name, current program, description, and what's next
 - **Channel customization** — reorder, hide, rename, regroup, manage favorites, and correct per-channel EPG matching or timing
 - **Auto-play and genre group icons** for faster browsing
 - **Number-key channel entry** — press the remote's number keys to tune by channel number from the channel list or while watching, with on-screen digit feedback
@@ -172,13 +236,13 @@ Install the community
 then open **Settings → Add repository** and enter:
 
 ```text
-https://raw.githubusercontent.com/lennylxx/webos-homebrew/main/repository.json
+https://raw.githubusercontent.com/Zucchiniii/webos-iptv-player/main/homebrew-repository.json
 ```
 
 To prefill the repository URL from a computer configured with `ares-cli`, run:
 
 ```bash
-ares-launch --device tv org.webosbrew.hbchannel -p '{"launchMode":"addRepository","url":"https://raw.githubusercontent.com/lennylxx/webos-homebrew/main/repository.json"}'
+ares-launch --device tv org.webosbrew.hbchannel -p '{"launchMode":"addRepository","url":"https://raw.githubusercontent.com/Zucchiniii/webos-iptv-player/main/homebrew-repository.json"}'
 ```
 
 Confirm **Add repository** on the TV. Homebrew Channel can then install the app
@@ -187,7 +251,7 @@ and detect updates from later GitHub releases.
 ### Developer Mode
 
 1. **Download the app.** On your computer, open the
-   [Releases page](https://github.com/lennylxx/webos-iptv-player/releases/latest)
+   [Releases page](https://github.com/Zucchiniii/webos-iptv-player/releases/latest)
    and download the latest `.ipk` file.
 
 2. **Turn on Developer Mode on the TV.**
@@ -286,15 +350,15 @@ Open with the **Blue** key or the **Settings** tab in the top bar. Sections:
 - **Xtream Accounts** — add, edit, remove, or temporarily disable accounts; check credentials, connection usage, and expiry; choose TS, HLS, or Auto for live streams; and pick the **Live categories** to load, optionally showing new ones automatically. The playlist and EPG are derived from the account credentials on Save.
 - **Playlists** — add, edit, remove, or temporarily disable M3U URLs. Re-applied on Save.
 - **Upload Playlists** — lists playlists uploaded through Device Setup, with controls to temporarily disable or remove each upload. New uploads appear automatically through Luna push.
-- **Channels** — check live-stream health; reorder, hide, rename, regroup, manually map entries to XMLTV channels, or correct one channel's EPG time; show hidden channels or reset customizations.
+- **Channels** — check live-stream health; keep movies and series that M3U lists mix in out of Live; reorder, hide, rename, regroup, manually map entries to XMLTV channels, or correct one channel's EPG time; show hidden channels or reset customizations.
 - **Manual XMLTV sources** — add several program guide URLs, prioritized from top to bottom, and apply each to all playlists or to specific ones. Guide URLs are also discovered automatically from `url-tvg`, `x-tvg-url`, or `tvg-url` in M3U playlists.
 - **EPG time zone** — show guide times in the TV's **Device** time zone or the guide **Feed** time zone.
 - **EPG time correction** — adjust each source independently in 15-minute steps.
 - **Program reminders** — open the date-grouped Reminder Manager to review or remove upcoming reminders.
-- **Appearance** — preview an app-wide color theme, choose Dark or Frosted player overlays, and adjust text from 80% to 150%.
-- **Playback** — toggle auto-play and Live preview, and choose whether Channel
-  Up/Down cycles the global list or stays within the active group, Favorites,
-  or playlist.
+- **Appearance** — preview an app-wide color theme, choose Dark or Frosted player overlays, pick the grid or list channel layout, and adjust text from 80% to 150%.
+- **Playback** — toggle auto-play and Live preview, choose Maximum or Standard
+  stream quality, and choose whether Channel Up/Down cycles the global list or
+  stays within the active group, Favorites, or playlist.
 - **Online Subtitles** — choose a preferred subtitle language and configure SubDL, OpenSubtitles, and Assrt credentials for online search.
 - **Advanced** — customize advanced interface, playback, and background refresh behavior.
 - **Data Management** — refresh data, clear caches or viewing lists, or reset the app.
@@ -338,7 +402,11 @@ some of the features above:
 
 ## License and third-party notices
 
-This project is licensed under [Apache-2.0](LICENSE). Third-party software and
+This project is a fork of
+[lennylxx/webos-iptv-player](https://github.com/lennylxx/webos-iptv-player),
+whose authors wrote the playback engine and most features listed above; the
+changes in this fork are described in [Why this fork](#why-this-fork). It is
+licensed under [Apache-2.0](LICENSE). Third-party software and
 artwork retain their own licenses; see [the attribution inventory](THIRD_PARTY_NOTICES.txt).
 Every build includes `LICENSE`, `THIRD_PARTY_NOTICES.txt`, and a `licenses/`
 directory in `dist/`, so the notices accompany the packaged app. This inventory
