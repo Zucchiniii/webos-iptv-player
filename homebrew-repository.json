@@ -3,7 +3,7 @@
     {
       "id": "com.lennylxx.iptv",
       "title": "webOS IPTV Player",
-      "iconUri": "https://raw.githubusercontent.com/Zucchiniii/webos-iptv-player/main/assets/icon130.png",
+      "iconUri": "https://raw.githubusercontent.com/Zucchiniii/webos-iptv-player/main/assets/icon130.png?art=neon",
       "manifestUrl": "https://github.com/Zucchiniii/webos-iptv-player/releases/latest/download/com.lennylxx.iptv.manifest.json",
       "fullDescriptionUrl": "https://raw.githubusercontent.com/Zucchiniii/webos-iptv-player/main/docs/homebrew-description.html",
       "shortDescription": "IPTV player for LG webOS TVs by Zucchiniii: channel grid with country filter, full channel details while you watch, crash-proof huge playlists, 4K streams, M3U, Xtream Codes, XMLTV and catch-up."
